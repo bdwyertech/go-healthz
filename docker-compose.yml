@@ -1,0 +1,19 @@
+version: '3.7'
+services:
+  centos:
+    restart: always
+    ports:
+      - 3000:3000
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - CRAP=123
+    volumes:
+      - .:/code:ro
+      - /sys/fs/cgroup:/sys/fs/cgroup:ro
+    cap_add:
+      - SYS_ADMIN
+
+# To run against the CentOS Container:
+# docker-compose exec centos go run .
