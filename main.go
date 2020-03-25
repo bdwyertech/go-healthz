@@ -4,6 +4,7 @@ package main
 
 import (
 	"encoding/json"
+	"flag"
 	"io/ioutil"
 	"log"
 	"net/http"
@@ -26,7 +27,9 @@ type GlobalStatus struct {
 }
 
 func main() {
-	cfgFile, err := os.Open("config.yml")
+	cfgPath := flag.String("config", "config.yml", "Path to configuration file")
+	flag.Parse()
+	cfgFile, err := os.Open(*cfgPath)
 	if err != nil {
 		log.Fatal(err)
 	}
