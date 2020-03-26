@@ -30,3 +30,15 @@ services:
   - name: my-application.service
   - name: mysqld.service
 ```
+
+#### SystemD Unit
+```sh
+[Unit]
+Description=Go-Healthz Healthcheck Daemon
+
+[Service]
+ExecStart=/usr/local/bin/go-healthz -c /etc/go-healthz.yml
+
+[Install]
+WantedBy=multi-user.target
+```
