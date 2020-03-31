@@ -9,7 +9,11 @@ import (
 	"log"
 	"net/http"
 	"os"
+	"path/filepath"
+	"runtime"
 
+	"github.com/kardianos/service"
+	// "github.com/kofalt/go-memoize"
 	"gopkg.in/yaml.v2"
 )
 
@@ -26,16 +30,17 @@ type GlobalStatus struct {
 	Services []SvcStatus
 }
 
-func main() {
-	cfgPath := flag.String("config", "config.yml", "Path to configuration file")
-	flag.Parse()
-	cfgFile, err := os.Open(*cfgPath)
+func Run(cfgPath string) {
+	cfgFile, err := os.Open(cfgPath)
 	if err != nil {
 		log.Fatal(err)
 	}
 	defer cfgFile.Close()
 
-	cfgBytes, _ := ioutil.ReadAll(cfgFile)
+	cfgBytes, err := ioutil.ReadAll(cfgFile)
+	if err != nil {
+		log.Fatal(err)
+	}
 
 	var cfg StatusConfig
 	if err = yaml.Unmarshal(cfgBytes, &cfg); err != nil {
@@ -84,8 +89,94 @@ func main() {
 	})
 
 	if cfg.Bind == "" {
-		cfg.Bind = "0.0.0.0:3000"
+		cfg.Bind = "0.0.0.0:8080"
 	}
 	log.Println("Go-Healthz listening on", cfg.Bind)
 	log.Fatal(http.ListenAndServe(cfg.Bind, mux))
+}
+
+func main() {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	dcfg := filepath.Join(dir, "go-healthz.yml")
+	cfgPath := flag.String("config", dcfg, "Path to configuration file")
+	svcFlag := flag.String("service", "", "Control the system service.")
+	flag.Parse()
+
+	svcConfig := &service.Config{
+		Name:        "Go-Healthz",
+		DisplayName: "Go Healthz",
+		Description: "Go Healthz Healthcheck Daemon",
+		// Dependencies: []string{
+		// 	"Requires=network.target",
+		// 	"After=network-online.target syslog.target"},
+		// Option: options,
+	}
+	if runtime.GOOS != "windows" {
+		// options := make(service.KeyValue)
+		// options["Restart"] = "on-success"
+		// options["SuccessExitStatus"] = "1 2 8 SIGKILL"
+		svcConfig.Option = make(service.KeyValue)
+		svcConfig.Option["Restart"] = "always"
+		svcConfig.Option["SuccessExitStatus"] = "1 2 8 SIGKILL"
+		svcConfig.Dependencies = []string{
+			"Requires=network.target",
+			"After=network-online.target syslog.target",
+		}
+	}
+
+	prg := &program{}
+	prg.configPath = *cfgPath
+	s, err := service.New(prg, svcConfig)
+	if err != nil {
+		log.Fatal(err)
+	}
+
+	if len(*svcFlag) != 0 {
+		err := service.Control(s, *svcFlag)
+		if err != nil {
+			log.Printf("Valid actions: %q\n", service.ControlAction)
+			log.Fatal(err)
+		}
+		return
+	}
+
+	if err = s.Run(); err != nil {
+		log.Fatal(err)
+	}
+}
+
+type program struct {
+	configPath string
+	exit       chan struct{}
+}
+
+func (p *program) Start(s service.Service) (err error) {
+	if service.Interactive() {
+		log.Println("Running in terminal.")
+	} else {
+		log.Println("Running under service manager.")
+	}
+	p.exit = make(chan struct{})
+
+	go p.run()
+
+	return
+}
+
+func (p *program) run() (err error) {
+	Run(p.configPath)
+	for {
+		select {
+		case <-p.exit:
+			return
+		}
+	}
+}
+
+func (p *program) Stop(s service.Service) (err error) {
+	close(p.exit)
+	return
 }
