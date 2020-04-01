@@ -16,6 +16,10 @@ type Service struct {
 }
 
 func (svc *Service) Cache() (cache *memoize.Memoizer) {
+	if svc.cache != nil {
+		return svc.cache
+	}
+
 	duration := 5 * time.Second
 	if svc.Frequency != "" {
 		var err error
@@ -24,9 +28,7 @@ func (svc *Service) Cache() (cache *memoize.Memoizer) {
 		}
 	}
 
-	if svc.cache == nil {
-		svc.cache = memoize.NewMemoizer(duration, 5*time.Minute)
-	}
+	svc.cache = memoize.NewMemoizer(duration, 5*time.Minute)
 
 	return svc.cache
 }

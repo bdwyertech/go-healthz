@@ -29,6 +29,10 @@ type Command struct {
 }
 
 func (cmd *Command) Cache() (cache *memoize.Memoizer) {
+	if cmd.cache != nil {
+		return cmd.cache
+	}
+
 	duration := 30 * time.Second
 	if cmd.Frequency != "" {
 		var err error
@@ -37,9 +41,7 @@ func (cmd *Command) Cache() (cache *memoize.Memoizer) {
 		}
 	}
 
-	if cmd.cache == nil {
-		cmd.cache = memoize.NewMemoizer(duration, 5*time.Minute)
-	}
+	cmd.cache = memoize.NewMemoizer(duration, 5*time.Minute)
 
 	return cmd.cache
 }
