@@ -14,8 +14,8 @@ type SvcStatus struct {
 	State   map[string]interface{}
 }
 
-func ServiceStatus(service string) (status SvcStatus, err error) {
-	status.Name = service
+func (svc *Service) Check() (status SvcStatus, err error) {
+	status.Name = svc.Name
 
 	m, err := dbus.New()
 
@@ -24,9 +24,9 @@ func ServiceStatus(service string) (status SvcStatus, err error) {
 	}
 	defer m.Close()
 
-	s, err := m.GetAllProperties(service)
+	s, err := m.GetAllProperties(svc.Name)
 	if err != nil {
-		log.Printf("Could not open service %v: %v", service, err)
+		log.Printf("Could not open service %v: %v", svc.Name, err)
 		return
 	}
 

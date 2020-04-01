@@ -7,6 +7,9 @@ import (
 	"log"
 	"os/exec"
 	"strings"
+	"time"
+
+	"github.com/kofalt/go-memoize"
 )
 
 type CmdStatus struct {
@@ -22,9 +25,38 @@ type Command struct {
 	Command   string `yaml:"cmd"`
 	Frequency string `yaml:"frequency"`
 	Sensitive bool   `yaml:"sensitive"`
+	cache     *memoize.Memoizer
 }
 
-func CommandStatus(command Command) (status CmdStatus, err error) {
+func (cmd *Command) Cache() (cache *memoize.Memoizer) {
+	duration := 30 * time.Second
+	if cmd.Frequency != "" {
+		var err error
+		if duration, err = time.ParseDuration(cmd.Frequency); err != nil {
+			log.Fatal(err)
+		}
+	}
+
+	if cmd.cache == nil {
+		cmd.cache = memoize.NewMemoizer(duration, 5*time.Minute)
+	}
+
+	return cmd.cache
+}
+
+func (cmd *Command) Status() (status CmdStatus, err error) {
+	s, err, _ := cmd.Cache().Memoize(cmd.Name, func() (interface{}, error) {
+		return cmd.Run()
+	})
+
+	status, ok := s.(CmdStatus)
+	if !ok {
+		log.Fatal("Unable to convert response into CmdStatus")
+	}
+	return
+}
+
+func (command *Command) Run() (status CmdStatus, err error) {
 	status.Name = command.Name
 	cmdArgs := strings.Fields(command.Command)
 	cmd := exec.Command(cmdArgs[0])

@@ -13,14 +13,13 @@ import (
 	"runtime"
 	"time"
 
-	"github.com/kofalt/go-memoize"
 	"gopkg.in/yaml.v2"
 )
 
 type StatusConfig struct {
-	Bind     string    `yaml:"bind"`
-	Commands []Command `yaml:"commands"`
-	Services []Service `yaml:"services"`
+	Bind     string     `yaml:"bind"`
+	Commands []*Command `yaml:"commands"`
+	Services []*Service `yaml:"services"`
 }
 
 type GlobalStatus struct {
@@ -51,7 +50,7 @@ func Run(cfgPath string) {
 	for _, _svc := range cfg.Services {
 		svc := _svc
 		mux.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
-			status, _ := ServiceStatus(svc.Name)
+			status, _ := svc.Status()
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
@@ -65,18 +64,8 @@ func Run(cfgPath string) {
 
 	for _, _cmd := range cfg.Commands {
 		cmd := _cmd
-		duration := 30 * time.Second
-		if cmd.Frequency != "" {
-			if duration, err = time.ParseDuration(cmd.Frequency); err != nil {
-				log.Fatal(err)
-			}
-		}
-		cache := memoize.NewMemoizer(duration, 5*time.Minute)
 		mux.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
-			s, _, _ := cache.Memoize(cmd.Name, func() (interface{}, error) {
-				return CommandStatus(cmd)
-			})
-			status := s.(CmdStatus)
+			status, _ := cmd.Status()
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
@@ -93,7 +82,7 @@ func Run(cfgPath string) {
 		global := GlobalStatus{}
 		global.Healthy = true
 		for _, svc := range cfg.Services {
-			status, _ := ServiceStatus(svc.Name)
+			status, _ := svc.Status()
 			if !status.Healthy {
 				global.Healthy = false
 			}
@@ -101,7 +90,7 @@ func Run(cfgPath string) {
 		}
 
 		for _, cmd := range cfg.Commands {
-			status, _ := CommandStatus(cmd)
+			status, _ := cmd.Status()
 			if !status.Healthy {
 				global.Healthy = false
 			}
