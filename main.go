@@ -11,22 +11,22 @@ import (
 	"os"
 	"path/filepath"
 	"runtime"
+	"time"
 
 	// "github.com/kofalt/go-memoize"
 	"gopkg.in/yaml.v2"
 )
 
 type StatusConfig struct {
-	Bind     string `yaml:"bind"`
-	Services []struct {
-		Name      string `yaml:"name"`
-		Frequency string `yaml:"frequency"`
-	} `yaml:"services"`
+	Bind     string    `yaml:"bind"`
+	Commands []Command `yaml:"commands"`
+	Services []Service `yaml:"services"`
 }
 
 type GlobalStatus struct {
 	Healthy  bool
 	Services []SvcStatus
+	Commands []CmdStatus
 }
 
 func Run(cfgPath string) {
@@ -48,10 +48,9 @@ func Run(cfgPath string) {
 
 	mux := http.NewServeMux()
 
-	allServices := []string{}
-
-	for _, svc := range cfg.Services {
-		mux.HandleFunc("/healthz/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
+	for _, _svc := range cfg.Services {
+		svc := _svc
+		mux.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
 			status, _ := ServiceStatus(svc.Name)
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
@@ -62,20 +61,41 @@ func Run(cfgPath string) {
 
 			json.NewEncoder(w).Encode(status)
 		})
-
-		allServices = append(allServices, svc.Name)
 	}
 
-	mux.HandleFunc("/healthz", func(w http.ResponseWriter, _ *http.Request) {
+	for _, _cmd := range cfg.Commands {
+		cmd := _cmd
+		mux.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
+			status, _ := CommandStatus(cmd)
+			w.Header().Set("Content-Type", "application/json")
+			if status.Healthy {
+				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+
+			json.NewEncoder(w).Encode(status)
+		})
+	}
+
+	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
 		global.Healthy = true
-		for _, svc := range allServices {
-			status, _ := ServiceStatus(svc)
+		for _, svc := range cfg.Services {
+			status, _ := ServiceStatus(svc.Name)
 			if !status.Healthy {
 				global.Healthy = false
 			}
 			global.Services = append(global.Services, status)
+		}
+
+		for _, cmd := range cfg.Commands {
+			status, _ := CommandStatus(cmd)
+			if !status.Healthy {
+				global.Healthy = false
+			}
+			global.Commands = append(global.Commands, status)
 		}
 
 		if global.Healthy {
@@ -91,7 +111,17 @@ func Run(cfgPath string) {
 		cfg.Bind = "0.0.0.0:8080"
 	}
 	log.Println("Go-Healthz listening on", cfg.Bind)
-	log.Fatal(http.ListenAndServe(cfg.Bind, mux))
+
+	srv := &http.Server{
+		Addr:    cfg.Bind,
+		Handler: mux,
+		// Good practice to set timeouts to avoid Slowloris attacks.
+		WriteTimeout: time.Second * 15,
+		ReadTimeout:  time.Second * 15,
+		IdleTimeout:  time.Second * 60,
+	}
+
+	log.Fatal(srv.ListenAndServe())
 }
 
 func main() {

@@ -32,7 +32,7 @@ func ServiceStatus(service string) (status SvcStatus, err error) {
 
 	status.State, err = s.Query()
 	if err != nil {
-		log.Printf("Could not query service status for %v: %v", service, err)
+		log.Printf("Could not query status of service %v: %v", service, err)
 		return
 	}
 
