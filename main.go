@@ -13,7 +13,7 @@ import (
 	"runtime"
 	"time"
 
-	// "github.com/kofalt/go-memoize"
+	"github.com/kofalt/go-memoize"
 	"gopkg.in/yaml.v2"
 )
 
@@ -65,8 +65,18 @@ func Run(cfgPath string) {
 
 	for _, _cmd := range cfg.Commands {
 		cmd := _cmd
+		duration := 30 * time.Second
+		if cmd.Frequency != "" {
+			if duration, err = time.ParseDuration(cmd.Frequency); err != nil {
+				log.Fatal(err)
+			}
+		}
+		cache := memoize.NewMemoizer(duration, 5*time.Minute)
 		mux.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
-			status, _ := CommandStatus(cmd)
+			s, _, _ := cache.Memoize(cmd.Name, func() (interface{}, error) {
+				return CommandStatus(cmd)
+			})
+			status := s.(CmdStatus)
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
