@@ -3,7 +3,7 @@
 package main
 
 import (
-	"log"
+	log "github.com/sirupsen/logrus"
 
 	"github.com/coreos/go-systemd/v22/dbus"
 )

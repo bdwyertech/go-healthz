@@ -3,8 +3,9 @@
 package main
 
 import (
-	"log"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kofalt/go-memoize"
 )

@@ -4,10 +4,11 @@ package main
 
 import (
 	"bytes"
-	"log"
 	"os/exec"
 	"strings"
 	"time"
+
+	log "github.com/sirupsen/logrus"
 
 	"github.com/kofalt/go-memoize"
 )
