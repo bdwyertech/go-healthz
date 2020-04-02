@@ -35,7 +35,7 @@ func (cmd *Command) Cache() (cache *memoize.Memoizer) {
 		return cmd.cache
 	}
 
-	duration := 30 * time.Second
+	duration := 5 * time.Second
 	if cmd.Frequency != "" {
 		var err error
 		if duration, err = time.ParseDuration(cmd.Frequency); err != nil {
