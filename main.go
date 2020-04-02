@@ -94,6 +94,9 @@ func Run(cfgPath string) {
 		})
 	}
 
+	// Ignore Favicon Requests (Browser)
+	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {})
+
 	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
