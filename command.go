@@ -15,6 +15,7 @@ import (
 
 type CmdStatus struct {
 	Name    string
+	Command string
 	Healthy bool
 	Output  string
 	Error   string
@@ -61,6 +62,7 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 
 func (command *Command) Run() (status CmdStatus, err error) {
 	status.Name = command.Name
+	status.Command = command.Command
 	cmdArgs := strings.Fields(command.Command)
 	cmd := exec.Command(cmdArgs[0])
 	if len(cmdArgs) > 1 {
@@ -69,8 +71,9 @@ func (command *Command) Run() (status CmdStatus, err error) {
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
+	log.Debugln("Executing Command:", command.Command)
 	if err = cmd.Run(); err != nil {
-		log.Println(err)
+		log.Debug(err)
 		status.Healthy = false
 		status.Error = err.Error()
 		if !command.Sensitive {
@@ -87,6 +90,7 @@ func (command *Command) Run() (status CmdStatus, err error) {
 	status.Code = cmd.ProcessState.ExitCode()
 	status.Healthy = true
 	if command.Sensitive {
+		status.Command = "SENSITIVE: REDACTED"
 		status.Output = "SENSITIVE: REDACTED"
 		status.Error = "SENSITIVE: REDACTED"
 		return
