@@ -24,8 +24,8 @@ type StatusConfig struct {
 
 type GlobalStatus struct {
 	Healthy  bool
-	Services []SvcStatus
-	Commands []CmdStatus
+	Services []SvcStatus `json:",omitempty"`
+	Commands []CmdStatus `json:",omitempty"`
 }
 
 func Run(cfgPath string) {
