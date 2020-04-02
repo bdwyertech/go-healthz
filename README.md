@@ -49,12 +49,16 @@ commands:
 ```
 
 #### SystemD Unit
-```sh
+```ini
 [Unit]
 Description=Go-Healthz Healthcheck Daemon
+After=network-online.target
+Wants=network-online.target
 
 [Service]
 ExecStart=/usr/local/bin/go-healthz -config /etc/go-healthz.yml
+OOMScoreAdjust=-500
+Restart=always
 
 [Install]
 WantedBy=multi-user.target
