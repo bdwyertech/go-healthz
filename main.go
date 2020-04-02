@@ -29,6 +29,22 @@ type GlobalStatus struct {
 	Commands []CmdStatus `json:",omitempty"`
 }
 
+func main() {
+	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
+	if err != nil {
+		log.Fatal(err)
+	}
+	dcfg := filepath.Join(dir, "go-healthz.yml")
+	cfgPath := flag.String("config", dcfg, "Path to configuration file")
+	flag.Parse()
+
+	if runtime.GOOS == "windows" {
+		RunWindows(*cfgPath)
+	} else {
+		Run(*cfgPath)
+	}
+}
+
 func Run(cfgPath string) {
 	cfgFile, err := os.Open(cfgPath)
 	if err != nil {
@@ -110,7 +126,7 @@ func Run(cfgPath string) {
 	if cfg.Bind == "" {
 		cfg.Bind = "0.0.0.0:8080"
 	}
-	log.Println("Go-Healthz listening on", cfg.Bind)
+	log.Infoln("Go-Healthz listening on", cfg.Bind)
 
 	srv := &http.Server{
 		Addr:    cfg.Bind,
@@ -122,20 +138,4 @@ func Run(cfgPath string) {
 	}
 
 	log.Fatal(srv.ListenAndServe())
-}
-
-func main() {
-	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
-	if err != nil {
-		log.Fatal(err)
-	}
-	dcfg := filepath.Join(dir, "go-healthz.yml")
-	cfgPath := flag.String("config", dcfg, "Path to configuration file")
-	flag.Parse()
-
-	if runtime.GOOS == "windows" {
-		RunWindows(*cfgPath)
-	} else {
-		Run(*cfgPath)
-	}
 }
