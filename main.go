@@ -50,12 +50,12 @@ func Run(cfgPath string) {
 	if err != nil {
 		log.Fatal(err)
 	}
-	defer cfgFile.Close()
 
 	cfgBytes, err := ioutil.ReadAll(cfgFile)
 	if err != nil {
 		log.Fatal(err)
 	}
+	cfgFile.Close()
 
 	var cfg StatusConfig
 	if err = yaml.Unmarshal(cfgBytes, &cfg); err != nil {
