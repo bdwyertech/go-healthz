@@ -7,6 +7,7 @@ import (
 	"flag"
 	"io/ioutil"
 	"net/http"
+	"net/http/httputil"
 	"os"
 	"path/filepath"
 	"runtime"
@@ -14,6 +15,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/gorilla/mux"
 	"gopkg.in/yaml.v2"
 )
 
@@ -21,12 +23,20 @@ type StatusConfig struct {
 	Bind     string     `yaml:"bind"`
 	Commands []*Command `yaml:"commands"`
 	Services []*Service `yaml:"services"`
+	Proxies  []*Proxy   `yaml:"proxies"`
 }
 
 type GlobalStatus struct {
 	Healthy  bool
 	Services []SvcStatus `json:",omitempty"`
 	Commands []CmdStatus `json:",omitempty"`
+}
+
+func init() {
+	log.SetFormatter(&log.TextFormatter{
+		ForceColors: true,
+	})
+	log.SetLevel(log.DebugLevel)
 }
 
 func main() {
@@ -62,11 +72,11 @@ func Run(cfgPath string) {
 		log.Fatal(err)
 	}
 
-	mux := http.NewServeMux()
+	r := mux.NewRouter()
 
 	for _, _svc := range cfg.Services {
 		svc := _svc
-		mux.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
+		r.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
 			status, _ := svc.Status()
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
@@ -81,7 +91,7 @@ func Run(cfgPath string) {
 
 	for _, _cmd := range cfg.Commands {
 		cmd := _cmd
-		mux.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
+		r.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
 			status, _ := cmd.Status()
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
@@ -95,9 +105,9 @@ func Run(cfgPath string) {
 	}
 
 	// Ignore Favicon Requests (Browser)
-	mux.HandleFunc("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {})
+	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {})
 
-	mux.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
 		global.Healthy = true
@@ -126,6 +136,12 @@ func Run(cfgPath string) {
 		json.NewEncoder(w).Encode(global)
 	})
 
+	// Local Reverse Proxy
+	for _, proxy := range cfg.Proxies {
+		p := httputil.NewSingleHostReverseProxy(proxy.URL())
+		r.HandleFunc("/"+proxy.Name+"/{rest:.*}", proxy.Handler(p)).Methods(proxy.Methods...)
+	}
+
 	if cfg.Bind == "" {
 		cfg.Bind = "0.0.0.0:8080"
 	}
@@ -133,7 +149,7 @@ func Run(cfgPath string) {
 
 	srv := &http.Server{
 		Addr:    cfg.Bind,
-		Handler: mux,
+		Handler: r,
 		// Good practice to set timeouts to avoid Slowloris attacks.
 		WriteTimeout: time.Second * 15,
 		ReadTimeout:  time.Second * 15,

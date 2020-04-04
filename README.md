@@ -23,6 +23,9 @@ Command-specific routes are available and correspond to the name of the command.
 ### Service-Specific Route
 Service-specific routes are available and correspond to the name of the service.  For example, `/service/MyAppServiceName`
 
+### Passthrough Proxies
+This service supports pass-through to localhost services.  You must explicitly declare supported verbs.
+
 ### Example Config
 ```yaml
 bind: 0.0.0.0:3000
@@ -46,6 +49,13 @@ commands:
     frequency: 5s
   - name: 'PowerShell'
     cmd: 'powershell.exe -NonInteractive -Command Get-Service WManSvc | select DisplayName, Status | Format-Table -HideTableHeaders'
+
+proxies:
+  - name: nginx
+    port: 8080
+    methods:
+      - GET
+      - HEAD
 ```
 
 #### SystemD Unit
