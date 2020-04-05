@@ -24,12 +24,14 @@ type StatusConfig struct {
 	Commands []*Command `yaml:"commands"`
 	Services []*Service `yaml:"services"`
 	Proxies  []*Proxy   `yaml:"proxies"`
+	Requests []*Request `yaml:"requests"`
 }
 
 type GlobalStatus struct {
 	Healthy  bool
-	Services []SvcStatus `json:",omitempty"`
-	Commands []CmdStatus `json:",omitempty"`
+	Services []SvcStatus     `json:",omitempty"`
+	Commands []CmdStatus     `json:",omitempty"`
+	Requests []RequestStatus `json:",omitempty"`
 }
 
 func init() {
@@ -104,6 +106,21 @@ func Run(cfgPath string) {
 		})
 	}
 
+	for _, _req := range cfg.Requests {
+		req := _req
+		r.HandleFunc("/request/"+req.Name, func(w http.ResponseWriter, _ *http.Request) {
+			status, _ := req.Status()
+			w.Header().Set("Content-Type", "application/json")
+			if status.Healthy {
+				w.WriteHeader(http.StatusOK)
+			} else {
+				w.WriteHeader(http.StatusServiceUnavailable)
+			}
+
+			json.NewEncoder(w).Encode(status)
+		})
+	}
+
 	// Ignore Favicon Requests (Browser)
 	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {})
 
@@ -125,6 +142,14 @@ func Run(cfgPath string) {
 				global.Healthy = false
 			}
 			global.Commands = append(global.Commands, status)
+		}
+
+		for _, req := range cfg.Requests {
+			status, _ := req.Status()
+			if !status.Healthy {
+				global.Healthy = false
+			}
+			global.Requests = append(global.Requests, status)
 		}
 
 		if global.Healthy {

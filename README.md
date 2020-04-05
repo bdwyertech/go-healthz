@@ -56,6 +56,23 @@ proxies:
     methods:
       - GET
       - HEAD
+
+requests:
+  - name: Get
+    url: https://postman-echo.com/get?foo1=bar1&foo2=bar2
+    method: GET
+    codes:
+      - 200
+  - name: Post
+    frequency: 30s
+    url: https://postman-echo.com/post
+    method: POST
+    body: foobar
+    headers:
+      - name: Content-Type
+        value: multipart/form-data
+    codes:
+      - 200
 ```
 
 #### SystemD Unit
