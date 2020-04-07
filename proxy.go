@@ -15,12 +15,12 @@ import (
 )
 
 type Proxy struct {
-	Name      string   `yaml:"name"`
-	Port      int      `yaml:"port"`
-	Methods   []string `yaml:"methods"`
-	Frequency string   `yaml:"frequency"`
-	cache     *memoize.Memoizer
-	url       *url.URL
+	Name    string   `yaml:"name"`
+	Port    int      `yaml:"port"`
+	Methods []string `yaml:"methods"`
+	Cache   string   `yaml:"cache"`
+	cache   *memoize.Memoizer
+	url     *url.URL
 }
 
 func (proxy *Proxy) Handler(p *httputil.ReverseProxy) func(http.ResponseWriter, *http.Request) {

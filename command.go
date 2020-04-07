@@ -26,21 +26,21 @@ type CmdStatus struct {
 type Command struct {
 	Name      string `yaml:"name"`
 	Command   string `yaml:"cmd"`
-	Frequency string `yaml:"frequency"`
+	Cache     string `yaml:"cache"`
 	Timeout   string `yaml:"timeout"`
 	Sensitive bool   `yaml:"sensitive"`
 	cache     *memoize.Memoizer
 }
 
-func (cmd *Command) Cache() (cache *memoize.Memoizer) {
+func (cmd *Command) Cached() (cache *memoize.Memoizer) {
 	if cmd.cache != nil {
 		return cmd.cache
 	}
 
 	duration := 5 * time.Second
-	if cmd.Frequency != "" {
+	if cmd.Cache != "" {
 		var err error
-		if duration, err = time.ParseDuration(cmd.Frequency); err != nil {
+		if duration, err = time.ParseDuration(cmd.Cache); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -51,7 +51,7 @@ func (cmd *Command) Cache() (cache *memoize.Memoizer) {
 }
 
 func (cmd *Command) Status() (status CmdStatus, err error) {
-	s, err, _ := cmd.Cache().Memoize(cmd.Name, func() (interface{}, error) {
+	s, err, _ := cmd.Cached().Memoize(cmd.Name, func() (interface{}, error) {
 		return cmd.Run()
 	})
 

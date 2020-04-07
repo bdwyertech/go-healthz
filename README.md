@@ -50,7 +50,7 @@ commands:
   - name: 'Date'
     cmd: 'date'
     timeout: 1s
-    frequency: 5s
+    cache: 5s
   - name: 'PowerShell'
     cmd: 'powershell.exe -NonInteractive -Command Get-Service WManSvc | select DisplayName, Status | Format-Table -HideTableHeaders'
 
@@ -70,7 +70,7 @@ requests:
     codes:
       - 200
   - name: Post
-    frequency: 30s
+    cache: 30s
     url: https://postman-echo.com/post
     method: POST
     body: foo=bar
@@ -79,7 +79,7 @@ requests:
     codes:
       - 200
   - name: PostJSON
-    frequency: 30s
+    cache: 30s
     url: https://postman-echo.com/post
     method: POST
     body: >

@@ -26,7 +26,7 @@ type Request struct {
 	Body      string            `yaml:"body"`
 	Headers   map[string]string `yaml:"headers"`
 	Codes     []int             `yaml:"codes"`
-	Frequency string            `yaml:"frequency"`
+	Cache     string            `yaml:"cache"`
 	Timeout   string            `yaml:"timeout"`
 	Sensitive bool              `yaml:"sensitive"`
 	Insecure  bool              `yaml:"insecure"`
@@ -42,15 +42,15 @@ type RequestStatus struct {
 	StatusCode int                    `json:",omitempty"`
 }
 
-func (req *Request) Cache() (cache *memoize.Memoizer) {
+func (req *Request) Cached() (cache *memoize.Memoizer) {
 	if req.cache != nil {
 		return req.cache
 	}
 
 	duration := 5 * time.Second
-	if req.Frequency != "" {
+	if req.Cache != "" {
 		var err error
-		if duration, err = time.ParseDuration(req.Frequency); err != nil {
+		if duration, err = time.ParseDuration(req.Cache); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -61,7 +61,7 @@ func (req *Request) Cache() (cache *memoize.Memoizer) {
 }
 
 func (req *Request) Status() (status RequestStatus, err error) {
-	s, err, _ := req.Cache().Memoize(req.Name, func() (interface{}, error) {
+	s, err, _ := req.Cached().Memoize(req.Name, func() (interface{}, error) {
 		return req.Run()
 	})
 

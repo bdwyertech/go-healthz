@@ -11,20 +11,20 @@ import (
 )
 
 type Service struct {
-	Name      string `yaml:"name"`
-	Frequency string `yaml:"frequency"`
-	cache     *memoize.Memoizer
+	Name  string `yaml:"name"`
+	Cache string `yaml:"cache"`
+	cache *memoize.Memoizer
 }
 
-func (svc *Service) Cache() (cache *memoize.Memoizer) {
+func (svc *Service) Cached() (cache *memoize.Memoizer) {
 	if svc.cache != nil {
 		return svc.cache
 	}
 
 	duration := 5 * time.Second
-	if svc.Frequency != "" {
+	if svc.Cache != "" {
 		var err error
-		if duration, err = time.ParseDuration(svc.Frequency); err != nil {
+		if duration, err = time.ParseDuration(svc.Cache); err != nil {
 			log.Fatal(err)
 		}
 	}
@@ -35,7 +35,7 @@ func (svc *Service) Cache() (cache *memoize.Memoizer) {
 }
 
 func (svc *Service) Status() (status SvcStatus, err error) {
-	s, err, _ := svc.Cache().Memoize(svc.Name, func() (interface{}, error) {
+	s, err, _ := svc.Cached().Memoize(svc.Name, func() (interface{}, error) {
 		return svc.Check()
 	})
 
