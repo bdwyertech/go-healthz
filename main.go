@@ -90,7 +90,7 @@ func Run(cfgPath string) {
 			}
 
 			json.NewEncoder(w).Encode(status)
-		})
+		}).Methods("GET")
 	}
 
 	for _, _cmd := range cfg.Commands {
@@ -105,7 +105,7 @@ func Run(cfgPath string) {
 			}
 
 			json.NewEncoder(w).Encode(status)
-		})
+		}).Methods("GET")
 	}
 
 	for _, _req := range cfg.Requests {
@@ -120,7 +120,7 @@ func Run(cfgPath string) {
 			}
 
 			json.NewEncoder(w).Encode(status)
-		})
+		}).Methods("GET")
 	}
 
 	// Ignore Favicon Requests (Browser)
@@ -161,7 +161,7 @@ func Run(cfgPath string) {
 		}
 
 		json.NewEncoder(w).Encode(global)
-	})
+	}).Methods("GET")
 
 	// Local Reverse Proxy
 	for _, proxy := range cfg.Proxies {
