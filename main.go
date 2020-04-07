@@ -37,13 +37,6 @@ type GlobalStatus struct {
 	Requests []RequestStatus `json:",omitempty"`
 }
 
-func init() {
-	log.SetFormatter(&log.TextFormatter{
-		ForceColors: true,
-	})
-	log.SetLevel(log.DebugLevel)
-}
-
 func main() {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
