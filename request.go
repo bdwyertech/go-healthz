@@ -20,19 +20,16 @@ import (
 )
 
 type Request struct {
-	Name    string `yaml:"name"`
-	Method  string `yaml:"method"`
-	Url     string `yaml:"url"`
-	Body    string `yaml:"body"`
-	Headers []struct {
-		Name  string `yaml:"name"`
-		Value string `yaml:"value"`
-	} `yaml:"headers"`
-	Codes     []int  `yaml:"codes"`
-	Frequency string `yaml:"frequency"`
-	Timeout   string `yaml:"timeout"`
-	Sensitive bool   `yaml:"sensitive"`
-	Insecure  bool   `yaml:"insecure"`
+	Name      string            `yaml:"name"`
+	Method    string            `yaml:"method"`
+	Url       string            `yaml:"url"`
+	Body      string            `yaml:"body"`
+	Headers   map[string]string `yaml:"headers"`
+	Codes     []int             `yaml:"codes"`
+	Frequency string            `yaml:"frequency"`
+	Timeout   string            `yaml:"timeout"`
+	Sensitive bool              `yaml:"sensitive"`
+	Insecure  bool              `yaml:"insecure"`
 	cache     *memoize.Memoizer
 }
 
@@ -98,8 +95,8 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		log.Fatal(err)
 	}
 
-	for _, header := range req.Headers {
-		r.Header.Add(header.Name, header.Value)
+	for k, v := range req.Headers {
+		r.Header.Add(k, v)
 	}
 
 	// Copy of http.DefaultTransport with Flippable TLS Verification

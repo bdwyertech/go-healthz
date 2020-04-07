@@ -75,8 +75,7 @@ requests:
     method: POST
     body: foo=bar
     headers:
-      - name: Content-Type
-        value: application/x-www-form-urlencoded
+      Content-Type: application/x-www-form-urlencoded
     codes:
       - 200
   - name: PostJSON
@@ -90,8 +89,7 @@ requests:
       "#": 11
      }
     headers:
-      - name: Content-Type
-        value: application/json
+      Content-Type: application/json
     codes:
       - 200
 ```
