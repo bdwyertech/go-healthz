@@ -178,8 +178,8 @@ func Run(cfgPath string) {
 		Addr:    cfg.Bind,
 		Handler: r,
 		// Good practice to set timeouts to avoid Slowloris attacks.
-		WriteTimeout: time.Second * 15,
-		ReadTimeout:  time.Second * 15,
+		WriteTimeout: time.Second * 30,
+		ReadTimeout:  time.Second * 30,
 		IdleTimeout:  time.Second * 60,
 	}
 
