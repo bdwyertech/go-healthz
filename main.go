@@ -13,6 +13,7 @@ import (
 	"os/signal"
 	"path/filepath"
 	"runtime"
+	"sync"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -138,13 +139,20 @@ func Run(cfgPath string) {
 			global.Services = append(global.Services, status)
 		}
 
-		for _, cmd := range cfg.Commands {
-			status, _ := cmd.Status()
-			if !status.Healthy {
-				global.Healthy = false
-			}
-			global.Commands = append(global.Commands, status)
+		var commands_wg sync.WaitGroup
+		commands_wg.Add(len(cfg.Commands))
+		for i := 0; i < len(cfg.Commands); i++ {
+			cmd := cfg.Commands[i]
+			go func() {
+				defer commands_wg.Done()
+				status, _ := cmd.Status()
+				if !status.Healthy {
+					global.Healthy = false
+				}
+				global.Commands = append(global.Commands, status)
+			}()
 		}
+		commands_wg.Wait()
 
 		for _, req := range cfg.Requests {
 			status, _ := req.Status()
