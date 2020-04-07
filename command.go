@@ -4,6 +4,7 @@ package main
 
 import (
 	"bytes"
+	"context"
 	"os/exec"
 	"strings"
 	"time"
@@ -26,6 +27,7 @@ type Command struct {
 	Name      string `yaml:"name"`
 	Command   string `yaml:"cmd"`
 	Frequency string `yaml:"frequency"`
+	Timeout   string `yaml:"timeout"`
 	Sensitive bool   `yaml:"sensitive"`
 	cache     *memoize.Memoizer
 }
@@ -63,8 +65,25 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 func (command *Command) Run() (status CmdStatus, err error) {
 	status.Name = command.Name
 	status.Command = command.Command
+
+	timeout := 5 * time.Second
+	if command.Timeout != "" {
+		var err error
+		if timeout, err = time.ParseDuration(command.Timeout); err != nil {
+			log.Fatal(err)
+		}
+		if timeout > 20*time.Second {
+			log.Warn(command.Name, ": Command timeout cannot be longer than 20 seconds!")
+			timeout = 20 * time.Second
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
 	cmdArgs := strings.Fields(command.Command)
-	cmd := exec.Command(cmdArgs[0])
+
+	cmd := exec.CommandContext(ctx, cmdArgs[0])
 	if len(cmdArgs) > 1 {
 		cmd.Args = cmdArgs[1:]
 	}
@@ -73,17 +92,21 @@ func (command *Command) Run() (status CmdStatus, err error) {
 	cmd.Stderr = &stderr
 	log.Debugln("Executing Command:", command.Command)
 	if err = cmd.Run(); err != nil {
-		log.Debug(err)
 		status.Healthy = false
-		status.Error = err.Error()
+		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
+			status.Error = "Command timed out"
+			log.Warnf("%v: %v", command.Name, status.Error)
+		} else {
+			status.Error = err.Error()
+		}
+		log.Warnf("%v: %v", command.Name, status.Error)
+
 		if !command.Sensitive {
+			if errString := strings.TrimSpace(string(stderr.Bytes())); errString != "" {
+				status.Output = errString
+				log.Warnf("%v: %v", command.Name, errString)
+			}
 			status.Code = cmd.ProcessState.ExitCode()
-			// out, err = cmd.Output
-			// if err != nil {
-			// 	log.Println(err)
-			// 	return
-			// }
-			// status.Output = string(out)
 		}
 		return
 	}
