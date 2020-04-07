@@ -49,6 +49,7 @@ commands:
     sensitive: true
   - name: 'Date'
     cmd: 'date'
+    timeout: 1s
     frequency: 5s
   - name: 'PowerShell'
     cmd: 'powershell.exe -NonInteractive -Command Get-Service WManSvc | select DisplayName, Status | Format-Table -HideTableHeaders'
@@ -64,6 +65,8 @@ requests:
   - name: Get
     url: https://postman-echo.com/get?foo1=bar1&foo2=bar2
     method: GET
+    timeout: 2s
+    insecure: true
     codes:
       - 200
   - name: Post
