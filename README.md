@@ -10,9 +10,9 @@
 
 This is a simple web service designed to enable simple health checks for services which otherwise do not expose their own.
 
-Go-Healthz performs health checks are performed in real-time, per request.  For this reason, a flexible caching mechanism has been implemented with sane defaults to prevent "expensive" checks from degrading performance.  Even so, on AWS, you'd want to limit inbound traffic from the Load Balancer only because the Load Balancers are the source of health check traffic.
+Health checks are performed in real-time, per request.  For this reason, a flexible caching mechanism has been implemented with sane defaults to prevent "expensive" checks from degrading performance.  Even so, on AWS, you'd want to limit inbound traffic from the Load Balancer only as they are the source of health check traffic.
 
-Frequency can be configured which will cache the results for the specified period of time.  This value is a [Go Duration String](https://golang.org/pkg/time/#ParseDuration)
+Both caching and timeouts are configurable.  They both default to 5s, with timeouts limited to a maximum of 20s.  Both accept a [Go Duration String](https://golang.org/pkg/time/#ParseDuration).
 
 ### Global Route
 The global `/` route returns a 200 if all commands & services are healthy, and a 503 Service Unavailable if unhealthy.
