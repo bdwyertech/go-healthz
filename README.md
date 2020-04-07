@@ -40,6 +40,9 @@ services:
   # Linux (SystemD)
   - name: my-application.service
   - name: mysqld.service
+  # Darwin
+  - name: com.apple.SoftwareUpdateNotificationManager
+  - name: com.apple.Spotlight
 
 commands:
   - name: 'Who am I?'
