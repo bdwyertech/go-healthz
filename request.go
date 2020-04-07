@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"crypto/tls"
 	"encoding/json"
 	"io"
@@ -15,6 +16,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/kofalt/go-memoize"
+	"github.com/pkg/errors"
 )
 
 type Request struct {
@@ -28,6 +30,7 @@ type Request struct {
 	} `yaml:"headers"`
 	Codes     []int  `yaml:"codes"`
 	Frequency string `yaml:"frequency"`
+	Timeout   string `yaml:"timeout"`
 	Sensitive bool   `yaml:"sensitive"`
 	Insecure  bool   `yaml:"insecure"`
 	cache     *memoize.Memoizer
@@ -74,7 +77,23 @@ func (req *Request) Status() (status RequestStatus, err error) {
 
 func (req *Request) Run() (status RequestStatus, err error) {
 	status.Name = req.Name
-	r, err := http.NewRequest(req.Method, req.Url, req.GetBody())
+
+	timeout := 5 * time.Second
+	if req.Timeout != "" {
+		var err error
+		if timeout, err = time.ParseDuration(req.Timeout); err != nil {
+			log.Fatal(err)
+		}
+		if timeout > 20*time.Second {
+			log.Warn(req.Name, ": Request timeout cannot be longer than 20 seconds!")
+			timeout = 20 * time.Second
+		}
+	}
+
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	r, err := http.NewRequestWithContext(ctx, req.Method, req.Url, req.GetBody())
 	if err != nil {
 		log.Fatal(err)
 	}
@@ -106,7 +125,12 @@ func (req *Request) Run() (status RequestStatus, err error) {
 	resp, err := client.Do(r)
 	if err != nil {
 		status.Healthy = false
-		status.Error = err
+		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
+			status.Error = errors.Wrap(ctxErr, "Request timed out")
+			log.Warnf("%v: %v", req.Name, status.Error)
+		} else {
+			status.Error = err
+		}
 		return
 	}
 
