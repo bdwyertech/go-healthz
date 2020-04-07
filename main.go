@@ -131,36 +131,59 @@ func Run(cfgPath string) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
 		global.Healthy = true
-		for _, svc := range cfg.Services {
-			status, _ := svc.Status()
-			if !status.Healthy {
-				global.Healthy = false
-			}
-			global.Services = append(global.Services, status)
+
+		var wg sync.WaitGroup
+
+		//
+		// Services
+		//
+		global.Services = make([]SvcStatus, len(cfg.Services))
+		for i, svc := range cfg.Services {
+			wg.Add(1)
+			go func(i int, svc *Service) {
+				defer wg.Done()
+				status, _ := svc.Status()
+				if !status.Healthy {
+					global.Healthy = false
+				}
+				global.Services[i] = status
+			}(i, svc)
 		}
 
-		var commands_wg sync.WaitGroup
-		commands_wg.Add(len(cfg.Commands))
-		for i := 0; i < len(cfg.Commands); i++ {
-			cmd := cfg.Commands[i]
-			go func() {
-				defer commands_wg.Done()
+		//
+		// Commands
+		//
+		global.Commands = make([]CmdStatus, len(cfg.Commands))
+		for i, cmd := range cfg.Commands {
+			wg.Add(1)
+			go func(i int, cmd *Command) {
+				defer wg.Done()
 				status, _ := cmd.Status()
 				if !status.Healthy {
 					global.Healthy = false
 				}
-				global.Commands = append(global.Commands, status)
-			}()
+				global.Commands[i] = status
+			}(i, cmd)
 		}
-		commands_wg.Wait()
 
-		for _, req := range cfg.Requests {
-			status, _ := req.Status()
-			if !status.Healthy {
-				global.Healthy = false
-			}
-			global.Requests = append(global.Requests, status)
+		//
+		// Requests
+		//
+		global.Requests = make([]RequestStatus, len(cfg.Requests))
+		for i, req := range cfg.Requests {
+			wg.Add(1)
+			go func(i int, req *Request) {
+				defer wg.Done()
+				status, _ := req.Status()
+				if !status.Healthy {
+					global.Healthy = false
+				}
+				global.Requests[i] = status
+			}(i, req)
 		}
+
+		// Waiters
+		wg.Wait()
 
 		if global.Healthy {
 			w.WriteHeader(http.StatusOK)
