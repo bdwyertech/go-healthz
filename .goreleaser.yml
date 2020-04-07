@@ -12,7 +12,7 @@ builds:
     goos:
       - windows
       - linux
-      # - darwin
+      - darwin
     goarch:
       - amd64
     flags:

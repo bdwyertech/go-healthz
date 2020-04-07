@@ -104,7 +104,8 @@ func (req *Request) Run() (status RequestStatus, err error) {
 
 	defer resp.Body.Close()
 
-	switch resp.Header.Get("Content-Type") {
+	contentType := resp.Header.Get("Content-Type")
+	switch strings.Split(contentType, ";")[0] {
 	case "application/json":
 		json.NewDecoder(resp.Body).Decode(&status.Response)
 	default:
@@ -122,8 +123,9 @@ func (req *Request) Run() (status RequestStatus, err error) {
 
 func (req *Request) GetBody() (body io.Reader) {
 	if req.Method == "POST" {
-		return strings.NewReader(req.Body)
+		return strings.NewReader(strings.TrimSpace(req.Body))
 	}
+
 	return
 }
 

@@ -20,6 +20,9 @@ The global `/` route returns a 200 if all commands & services are healthy, and a
 ### Command-Specific Route
 Command-specific routes are available and correspond to the name of the command.  For example, `/command/MyCommandName`
 
+### Request-Specific Route
+Request-specific routes are available and correspond to the name of the request.  For example, `/request/MyRequestName`
+
 ### Service-Specific Route
 Service-specific routes are available and correspond to the name of the service.  For example, `/service/MyAppServiceName`
 
@@ -67,10 +70,25 @@ requests:
     frequency: 30s
     url: https://postman-echo.com/post
     method: POST
-    body: foobar
+    body: foo=bar
     headers:
       - name: Content-Type
-        value: multipart/form-data
+        value: application/x-www-form-urlencoded
+    codes:
+      - 200
+  - name: PostJSON
+    frequency: 30s
+    url: https://postman-echo.com/post
+    method: POST
+    body: >
+     {
+      "test": true,
+      "app": "go-healthz",
+      "#": 11
+     }
+    headers:
+      - name: Content-Type
+        value: application/json
     codes:
       - 200
 ```
