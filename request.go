@@ -3,9 +3,11 @@
 package main
 
 import (
+	"crypto/tls"
 	"encoding/json"
 	"io"
 	"io/ioutil"
+	"net"
 	"net/http"
 	"strings"
 	"time"
@@ -27,6 +29,7 @@ type Request struct {
 	Codes     []int  `yaml:"codes"`
 	Frequency string `yaml:"frequency"`
 	Sensitive bool   `yaml:"sensitive"`
+	Insecure  bool   `yaml:"insecure"`
 	cache     *memoize.Memoizer
 }
 
@@ -80,8 +83,26 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		r.Header.Add(header.Name, header.Value)
 	}
 
-	client := &http.Client{}
+	// Copy of http.DefaultTransport with Flippable TLS Verification
+	// https://golang.org/pkg/net/http/#Client
+	client := &http.Client{
+		Transport: &http.Transport{
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: !!req.Insecure},
+			Proxy:           http.ProxyFromEnvironment,
+			DialContext: (&net.Dialer{
+				Timeout:   30 * time.Second,
+				KeepAlive: 30 * time.Second,
+				DualStack: true,
+			}).DialContext,
+			ForceAttemptHTTP2:     true,
+			MaxIdleConns:          100,
+			IdleConnTimeout:       90 * time.Second,
+			TLSHandshakeTimeout:   10 * time.Second,
+			ExpectContinueTimeout: 1 * time.Second,
+		},
+	}
 
+	log.Debugln("Executing Request:", req.Name)
 	resp, err := client.Do(r)
 	if err != nil {
 		status.Healthy = false
