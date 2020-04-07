@@ -3,12 +3,14 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"os"
+	"os/signal"
 	"path/filepath"
 	"runtime"
 	"time"
@@ -181,5 +183,25 @@ func Run(cfgPath string) {
 		IdleTimeout:  time.Second * 60,
 	}
 
-	log.Fatal(srv.ListenAndServe())
+	// Run our server in a goroutine so that it doesn't block.
+	go func() {
+		if err := srv.ListenAndServe(); err != nil {
+			log.Error(err)
+		}
+	}()
+
+	c := make(chan os.Signal, 1)
+	// Accept graceful shutdowns when quit via SIGINT (Ctrl+C)
+	// SIGKILL, SIGQUIT or SIGTERM (Ctrl+/) will not be caught.
+	signal.Notify(c, os.Interrupt)
+	// Block until we receive our signal.
+	<-c
+	// Create a deadline to wait for.
+	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
+	defer cancel()
+	// Doesn't block if no connections, but will otherwise wait
+	// until the timeout deadline.
+	srv.Shutdown(ctx)
+	log.Info("Go-Healthz shutting down")
+	os.Exit(0)
 }
