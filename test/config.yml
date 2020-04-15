@@ -1,0 +1,10 @@
+bind: 0.0.0.0:3456
+
+requests:
+  - name: Get
+    url: https://postman-echo.com/get?foo1=bar1&foo2=bar2
+    method: GET
+    timeout: 2s
+    insecure: true
+    codes:
+      - 200

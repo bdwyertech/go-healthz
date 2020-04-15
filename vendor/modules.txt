@@ -1,6 +1,8 @@
 # github.com/coreos/go-systemd/v22 v22.0.0
 ## explicit
 github.com/coreos/go-systemd/v22/dbus
+# github.com/davecgh/go-spew v1.1.1
+github.com/davecgh/go-spew/spew
 # github.com/godbus/dbus/v5 v5.0.3
 github.com/godbus/dbus/v5
 # github.com/gorilla/mux v1.7.4
@@ -21,9 +23,14 @@ github.com/patrickmn/go-cache
 # github.com/pkg/errors v0.9.1
 ## explicit
 github.com/pkg/errors
+# github.com/pmezard/go-difflib v1.0.0
+github.com/pmezard/go-difflib/difflib
 # github.com/sirupsen/logrus v1.5.0
 ## explicit
 github.com/sirupsen/logrus
+# github.com/stretchr/testify v1.2.2
+## explicit
+github.com/stretchr/testify/assert
 # golang.org/x/sync v0.0.0-20190423024810-112230192c58
 golang.org/x/sync/singleflight
 # golang.org/x/sys v0.0.0-20200323222414-85ca7c5b95cd
