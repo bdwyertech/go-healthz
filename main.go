@@ -46,6 +46,11 @@ func main() {
 	cfgPath := flag.String("config", dcfg, "Path to configuration file")
 	flag.Parse()
 
+	if versionFlag {
+		showVersion()
+		os.Exit(0)
+	}
+
 	if runtime.GOOS == "windows" {
 		RunWindows(*cfgPath)
 	} else {
