@@ -3,10 +3,12 @@
 package main
 
 import (
+	"context"
 	"fmt"
 	"os"
 	"os/exec"
 	"strings"
+	"time"
 
 	log "github.com/sirupsen/logrus"
 
@@ -64,11 +66,21 @@ func (svc *Service) checkSysV() (status SvcStatus, err error) {
 	status.Name = svc.Name
 
 	status.State = make(map[string]interface{})
-	cmd := exec.Command("service", svc.Name, "status")
+
+	timeout := 5 * time.Second
+	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "service", svc.Name, "status")
 	out, err := cmd.CombinedOutput()
 	if err != nil {
-		cmdString := strings.Join([]string{"service", svc.Name, "status"}, " ")
-		err = fmt.Errorf("%q failed: %v, %s", cmdString, err, out)
+		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
+			status.State["Error"] = fmt.Sprintf("Command timed out: %v", cmd.String())
+		} else {
+			err = fmt.Errorf("%v failed: %v, %v", cmd.String(), err, strings.TrimSpace(string(out)))
+			status.State["Error"] = err.Error()
+			return
+		}
 	}
 
 	output := strings.TrimSpace(string(out))
