@@ -19,6 +19,7 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
+	"github.com/imdario/mergo"
 	"gopkg.in/yaml.v3"
 )
 
@@ -73,6 +74,28 @@ func Run(cfgPath string) {
 	var cfg StatusConfig
 	if err = yaml.Unmarshal(cfgBytes, &cfg); err != nil {
 		log.Fatal(err)
+	}
+
+	// Enforced Organization Configuration
+	if orgPath, ok := os.LookupEnv("GOHEALTHZ_ORG_CONFIG"); ok {
+		orgFile, err := os.Open(orgPath)
+		if err != nil {
+			log.Fatal(err)
+		}
+		orgBytes, err := ioutil.ReadAll(orgFile)
+		if err != nil {
+			log.Fatal(err)
+		}
+		orgFile.Close()
+		var orgCfg StatusConfig
+		if err = yaml.Unmarshal(orgBytes, &orgCfg); err != nil {
+			log.Fatal(err)
+		}
+		if err = mergo.Merge(&cfg, &orgCfg, mergo.WithAppendSlice); err != nil {
+			panic(err)
+		}
+		// Walk the Configuration, and unique the Slices (Organization Wins)
+		cfg.Unique()
 	}
 
 	r := mux.NewRouter()
@@ -233,4 +256,36 @@ func Run(cfgPath string) {
 	srv.Shutdown(ctx)
 	log.Info("Go-Healthz shutting down")
 	os.Exit(0)
+}
+
+func (cfg *StatusConfig) Unique() {
+	svcs := make(map[string]int)
+	for i, svc := range cfg.Services {
+		if previous, present := svcs[svc.Name]; present {
+			copy(cfg.Services[previous:], cfg.Services[previous+1:])
+			cfg.Services[len(cfg.Services)-1] = nil
+			cfg.Services = cfg.Services[:len(cfg.Services)-1]
+		}
+		svcs[svc.Name] = i
+	}
+
+	cmds := make(map[string]int)
+	for i, cmd := range cfg.Commands {
+		if previous, present := cmds[cmd.Name]; present {
+			copy(cfg.Commands[previous:], cfg.Commands[previous+1:])
+			cfg.Commands[len(cfg.Commands)-1] = nil
+			cfg.Commands = cfg.Commands[:len(cfg.Commands)-1]
+		}
+		cmds[cmd.Name] = i
+	}
+
+	reqs := make(map[string]int)
+	for i, req := range cfg.Requests {
+		if previous, present := reqs[req.Name]; present {
+			copy(cfg.Requests[previous:], cfg.Requests[previous+1:])
+			cfg.Requests[len(cfg.Requests)-1] = nil
+			cfg.Requests = cfg.Requests[:len(cfg.Requests)-1]
+		}
+		reqs[req.Name] = i
+	}
 }

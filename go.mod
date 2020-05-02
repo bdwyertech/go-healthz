@@ -5,6 +5,7 @@ go 1.14
 require (
 	github.com/coreos/go-systemd/v22 v22.0.0
 	github.com/gorilla/mux v1.7.4
+	github.com/imdario/mergo v0.3.9
 	github.com/kardianos/service v1.0.0
 	github.com/kofalt/go-memoize v0.0.0-20190519021333-cf756f0462a4
 	github.com/pkg/errors v0.9.1
