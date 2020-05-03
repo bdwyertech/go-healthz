@@ -55,9 +55,9 @@ func RunWindows(cfgPath string) {
 
 func (p *program) Start(s service.Service) (err error) {
 	if service.Interactive() {
-		log.Println("Running in terminal.")
+		log.Debug("Running in terminal.")
 	} else {
-		log.Println("Running under service manager.")
+		log.Debug("Running under service manager.")
 	}
 	p.exit = make(chan struct{})
 
