@@ -103,7 +103,7 @@ func (req *Request) Run() (status RequestStatus, err error) {
 	// https://golang.org/pkg/net/http/#Client
 	client := &http.Client{
 		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: !!req.Insecure},
+			TLSClientConfig: &tls.Config{InsecureSkipVerify: req.Insecure},
 			Proxy:           http.ProxyFromEnvironment,
 			DialContext: (&net.Dialer{
 				Timeout:   30 * time.Second,

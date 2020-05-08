@@ -102,7 +102,7 @@ func (command *Command) Run() (status CmdStatus, err error) {
 		log.Warnf("%v: %v", command.Name, status.Error)
 
 		if !command.Sensitive {
-			if errString := strings.TrimSpace(string(stderr.Bytes())); errString != "" {
+			if errString := strings.TrimSpace(stderr.String()); errString != "" {
 				status.Output = errString
 				log.Warnf("%v: %v", command.Name, errString)
 			}
@@ -118,7 +118,7 @@ func (command *Command) Run() (status CmdStatus, err error) {
 		status.Error = "SENSITIVE: REDACTED"
 		return
 	}
-	status.Output = strings.TrimSpace(string(stdout.Bytes()))
-	status.Error = strings.TrimSpace(string(stderr.Bytes()))
+	status.Output = strings.TrimSpace(stdout.String())
+	status.Error = strings.TrimSpace(stderr.String())
 	return
 }

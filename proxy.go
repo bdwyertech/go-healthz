@@ -11,15 +11,12 @@ import (
 	log "github.com/sirupsen/logrus"
 
 	"github.com/gorilla/mux"
-	"github.com/kofalt/go-memoize"
 )
 
 type Proxy struct {
 	Name    string   `yaml:"name"`
 	Port    int      `yaml:"port"`
 	Methods []string `yaml:"methods"`
-	Cache   string   `yaml:"cache"`
-	cache   *memoize.Memoizer
 	url     *url.URL
 }
 

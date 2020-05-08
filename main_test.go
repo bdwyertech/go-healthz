@@ -23,12 +23,7 @@ func TestDefault(t *testing.T) {
 	defer cancel()
 	go func() {
 		go main()
-		for {
-			select {
-			case <-ctx.Done():
-				return
-			}
-		}
+		<-ctx.Done()
 	}()
 	// Wait a second for the Server
 	time.Sleep(1 * time.Second)

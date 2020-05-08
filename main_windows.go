@@ -68,12 +68,8 @@ func (p *program) Start(s service.Service) (err error) {
 
 func (p *program) run() (err error) {
 	Run(p.configPath)
-	for {
-		select {
-		case <-p.exit:
-			return
-		}
-	}
+	<-p.exit
+	return
 }
 
 func (p *program) Stop(s service.Service) (err error) {
