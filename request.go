@@ -95,8 +95,9 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		log.Fatal(err)
 	}
 
+	r.Header.Set("User-Agent", "go-healthz/"+ReleaseVer)
 	for k, v := range req.Headers {
-		r.Header.Add(k, v)
+		r.Header.Set(k, v)
 	}
 
 	// Copy of http.DefaultTransport with Flippable TLS Verification
