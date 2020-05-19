@@ -29,6 +29,7 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 		log.Printf("Could not open service %v: %v", svc.Name, err)
 		return
 	}
+	defer s.Close()
 
 	status.State, err = s.Query()
 	if err != nil {
