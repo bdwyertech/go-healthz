@@ -1,4 +1,4 @@
-# github.com/coreos/go-systemd/v22 v22.0.0
+# github.com/coreos/go-systemd/v22 v22.1.0
 ## explicit
 github.com/coreos/go-systemd/v22/dbus
 # github.com/davecgh/go-spew v1.1.1
@@ -26,21 +26,20 @@ github.com/pmezard/go-difflib/difflib
 # github.com/sirupsen/logrus v1.6.0
 ## explicit
 github.com/sirupsen/logrus
-# github.com/stretchr/testify v1.5.1
+# github.com/stretchr/testify v1.6.0
 ## explicit
 github.com/stretchr/testify/assert
 # golang.org/x/sync v0.0.0-20190423024810-112230192c58
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20200420163511-1957bb5e6d1f
+# golang.org/x/sys v0.0.0-20200602100848-8d3cce7afc34
 ## explicit
+golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
 golang.org/x/sys/windows
 golang.org/x/sys/windows/registry
 golang.org/x/sys/windows/svc
 golang.org/x/sys/windows/svc/eventlog
 golang.org/x/sys/windows/svc/mgr
-# gopkg.in/yaml.v2 v2.2.2
-gopkg.in/yaml.v2
-# gopkg.in/yaml.v3 v3.0.0-20200313102051-9f266ea9e77c
+# gopkg.in/yaml.v3 v3.0.0-20200602174320-3e3e88ca92fa
 ## explicit
 gopkg.in/yaml.v3

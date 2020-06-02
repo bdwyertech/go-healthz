@@ -89,7 +89,7 @@ func Unmarshal(in []byte, out interface{}) (err error) {
 	return unmarshal(in, out, false)
 }
 
-// A Decorder reads and decodes YAML values from an input stream.
+// A Decoder reads and decodes YAML values from an input stream.
 type Decoder struct {
 	parser      *parser
 	knownFields bool
@@ -194,7 +194,7 @@ func unmarshal(in []byte, out interface{}, strict bool) (err error) {
 //                  Zero valued structs will be omitted if all their public
 //                  fields are zero, unless they implement an IsZero
 //                  method (see the IsZeroer interface type), in which
-//                  case the field will be included if that method returns true.
+//                  case the field will be excluded if IsZero returns true.
 //
 //     flow         Marshal using a flow style (useful for structs,
 //                  sequences and maps).
@@ -249,6 +249,24 @@ func NewEncoder(w io.Writer) *Encoder {
 func (e *Encoder) Encode(v interface{}) (err error) {
 	defer handleErr(&err)
 	e.encoder.marshalDoc("", reflect.ValueOf(v))
+	return nil
+}
+
+// Encode encodes value v and stores its representation in n.
+//
+// See the documentation for Marshal for details about the
+// conversion of Go values into YAML.
+func (n *Node) Encode(v interface{}) (err error) {
+	defer handleErr(&err)
+	e := newEncoder()
+	defer e.destroy()
+	e.marshalDoc("", reflect.ValueOf(v))
+	e.finish()
+	p := newParser(e.out)
+	p.textless = true
+	defer p.destroy()
+	doc := p.parse()
+	*n = *doc.Content[0]
 	return nil
 }
 
