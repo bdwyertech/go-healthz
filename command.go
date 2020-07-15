@@ -15,12 +15,13 @@ import (
 )
 
 type CmdStatus struct {
-	Name    string
-	Command string
-	Healthy bool
-	Output  string
-	Error   string
-	Code    int
+	Name      string
+	Command   string
+	Healthy   bool
+	Output    string
+	Error     string
+	Code      int
+	Timestamp time.Time
 }
 
 type Command struct {
@@ -65,6 +66,7 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 func (command *Command) Run() (status CmdStatus, err error) {
 	status.Name = command.Name
 	status.Command = command.Command
+	status.Timestamp = time.Now()
 
 	timeout := 5 * time.Second
 	if command.Timeout != "" {

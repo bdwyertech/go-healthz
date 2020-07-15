@@ -40,6 +40,7 @@ type RequestStatus struct {
 	Response   map[string]interface{} `json:",omitempty"`
 	Status     string                 `json:",omitempty"`
 	StatusCode int                    `json:",omitempty"`
+	Timestamp  time.Time
 }
 
 func (req *Request) Cached() (cache *memoize.Memoizer) {
@@ -74,6 +75,7 @@ func (req *Request) Status() (status RequestStatus, err error) {
 
 func (req *Request) Run() (status RequestStatus, err error) {
 	status.Name = req.Name
+	status.Timestamp = time.Now()
 
 	timeout := 5 * time.Second
 	if req.Timeout != "" {

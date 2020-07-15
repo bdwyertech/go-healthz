@@ -3,6 +3,8 @@
 package main
 
 import (
+	"time"
+
 	log "github.com/sirupsen/logrus"
 
 	"golang.org/x/sys/windows"
@@ -11,9 +13,10 @@ import (
 )
 
 type SvcStatus struct {
-	Name    string
-	Healthy bool
-	State   svc.Status
+	Name      string
+	Healthy   bool
+	State     svc.Status
+	Timestamp time.Time
 }
 
 func (svc *Service) Check() (status SvcStatus, err error) {
@@ -40,6 +43,8 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 	if status.State.State == windows.SERVICE_RUNNING {
 		status.Healthy = true
 	}
+
+	status.Timestamp = time.Now()
 
 	return
 }

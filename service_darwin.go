@@ -9,12 +9,14 @@ import (
 	"os/exec"
 	"strconv"
 	"strings"
+	"time"
 )
 
 type SvcStatus struct {
-	Name    string
-	Healthy bool
-	State   map[string]interface{}
+	Name      string
+	Healthy   bool
+	State     map[string]interface{}
+	Timestamp time.Time
 }
 
 func (svc *Service) Check() (status SvcStatus, err error) {
@@ -60,6 +62,8 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 	}
 
 	err = errors.New("Service not found")
+
+	status.Timestamp = time.Now()
 
 	return
 }
