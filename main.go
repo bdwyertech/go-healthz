@@ -32,6 +32,7 @@ type StatusConfig struct {
 
 type GlobalStatus struct {
 	Healthy  bool
+	Reason   string          `json:",omitempty"`
 	Services []SvcStatus     `json:",omitempty"`
 	Commands []CmdStatus     `json:",omitempty"`
 	Requests []RequestStatus `json:",omitempty"`
@@ -125,10 +126,21 @@ func Run(cfgPath string) {
 	// Ignore Favicon Requests (Browser)
 	r.HandleFunc("/favicon.ico", func(w http.ResponseWriter, _ *http.Request) {})
 
+	// Global Force Unhealthy semaphore
+	globalSemaphore, err := filepath.Abs(cfgPath + ".unhealthy")
+	if err != nil {
+		log.Fatal(err)
+	}
+
 	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
 		global.Healthy = true
+
+		if _, err := os.Stat(globalSemaphore); err == nil {
+			global.Healthy = false
+			global.Reason = "Global unhealthy semaphore exists: " + globalSemaphore
+		}
 
 		var wg sync.WaitGroup
 
