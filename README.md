@@ -115,3 +115,8 @@ Restart=always
 [Install]
 WantedBy=multi-user.target
 ```
+
+#### Global Unhealthy Semaphore
+Other processes/tooling can manually trigger go-healthz to report unhealthy by touching a .unhealthy file at the same path as the configuration file.  If your configuration file is located at `/etc/go-healthz.yml`, then the unhealthy semaphore would be `/etc/go-healthz.yml.unhealthy`.
+
+A sample use case is to create this file if your bootstrapping process fails, e.g. cloud-init/user-data.
