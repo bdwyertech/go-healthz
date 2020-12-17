@@ -8,7 +8,7 @@ github.com/godbus/dbus/v5
 # github.com/gorilla/mux v1.8.0
 ## explicit
 github.com/gorilla/mux
-# github.com/kardianos/service v1.1.0
+# github.com/kardianos/service v1.2.0
 ## explicit
 github.com/kardianos/service
 # github.com/kofalt/go-memoize v0.0.0-20200917044458-9b55a8d73e1c
@@ -29,7 +29,7 @@ github.com/sirupsen/logrus
 github.com/stretchr/testify/assert
 # golang.org/x/sync v0.0.0-20200625203802-6e8e738ad208
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20201009025420-dfb3f7c4e634
+# golang.org/x/sys v0.0.0-20201214210602-f9fddec55a1e
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix
