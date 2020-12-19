@@ -47,7 +47,7 @@ func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 
 	s, err := m.GetAllProperties(svc.Name)
 	if err != nil {
-		log.Printf("Could not open service %v: %v", svc.Name, err)
+		log.Warnf("Could not open service %v: %v", svc.Name, err)
 		return
 	}
 

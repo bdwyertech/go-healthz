@@ -97,7 +97,6 @@ func (command *Command) Run() (status CmdStatus, err error) {
 		status.Healthy = false
 		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
 			status.Error = "Command timed out"
-			log.Warnf("%v: %v", command.Name, status.Error)
 		} else {
 			status.Error = err.Error()
 		}

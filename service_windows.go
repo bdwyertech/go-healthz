@@ -29,14 +29,14 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 
 	s, err := m.OpenService(svc.Name)
 	if err != nil {
-		log.Printf("Could not open service %v: %v", svc.Name, err)
+		log.Warnf("Could not open service %v: %v", svc.Name, err)
 		return
 	}
 	defer s.Close()
 
 	status.State, err = s.Query()
 	if err != nil {
-		log.Printf("Could not query status of service %v: %v", svc.Name, err)
+		log.Warnf("Could not query status of service %v: %v", svc.Name, err)
 		return
 	}
 

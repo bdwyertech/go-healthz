@@ -140,6 +140,7 @@ func Run(cfgPath string) {
 		if _, err := os.Stat(globalSemaphore); err == nil {
 			global.Healthy = false
 			global.Reason = "Global unhealthy semaphore exists: " + globalSemaphore
+			log.Warnln(global.Reason)
 		}
 
 		var wg sync.WaitGroup
@@ -154,6 +155,7 @@ func Run(cfgPath string) {
 				defer wg.Done()
 				status, _ := svc.Status()
 				if !status.Healthy {
+					log.Warnln("Service unhealthy:", svc.Name)
 					global.Healthy = false
 				}
 				global.Services[i] = status
@@ -170,6 +172,7 @@ func Run(cfgPath string) {
 				defer wg.Done()
 				status, _ := cmd.Status()
 				if !status.Healthy {
+					log.Warnln("Command unhealthy:", cmd.Name)
 					global.Healthy = false
 				}
 				global.Commands[i] = status
@@ -186,6 +189,7 @@ func Run(cfgPath string) {
 				defer wg.Done()
 				status, _ := req.Status()
 				if !status.Healthy {
+					log.Warnln("Request unhealthy:", req.Name)
 					global.Healthy = false
 				}
 				global.Requests[i] = status
