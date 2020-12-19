@@ -11,14 +11,14 @@
 
 ## Overview
 
-This is a simple web service designed to enable simple health checks for services which otherwise do not expose their own.
+This is a small web service designed to enable simple health checks for services which otherwise do not expose their own.
 
-Health checks are performed in real-time, per request.  For this reason, a flexible caching mechanism has been implemented with sane defaults to prevent "expensive" checks from degrading performance.  Even so, on AWS, you'd want to limit inbound traffic from the Load Balancer only as they are the source of health check traffic.
+Health checks are performed in real-time, per request.  For this reason, a flexible caching mechanism has been implemented with sane defaults to prevent "expensive" checks from degrading performance and/or DDoS'ing your server.  Even so, you should still limit access to this endpoint to only trusted networks.  For example, on AWS, you'd want to allow inbound traffic from trusted networks and/or your Load Balancer's SG as they are the source of health check traffic.
 
 Both caching and timeouts are configurable.  They both default to 5s, with timeouts limited to a maximum of 20s.  Both accept a [Go Duration String](https://golang.org/pkg/time/#ParseDuration).
 
 ### Global Route
-The global `/` route returns a 200 if all commands & services are healthy, and a 503 Service Unavailable if unhealthy.
+The global `/` route returns a 200 if all checks are healthy, and a 503 Service Unavailable if unhealthy.
 
 ### Command-Specific Route
 Command-specific routes are available and correspond to the name of the command.  For example, `/command/MyCommandName`
