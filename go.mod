@@ -3,7 +3,7 @@ module github.com/bdwyertech/go-healthz
 go 1.16
 
 require (
-	github.com/coreos/go-systemd/v22 v22.1.0
+	github.com/coreos/go-systemd/v22 v22.3.1
 	github.com/gorilla/mux v1.8.0
 	github.com/kardianos/service v1.2.0
 	github.com/kofalt/go-memoize v0.0.0-20200917044458-9b55a8d73e1c
