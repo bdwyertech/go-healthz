@@ -38,14 +38,14 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 	status.Name = svc.Name
 
-	m, err := dbus.New()
+	m, err := dbus.NewWithContext(context.Background())
 
 	if err != nil {
 		log.Fatal("SCM connection failed: ", err)
 	}
 	defer m.Close()
 
-	s, err := m.GetAllProperties(svc.Name)
+	s, err := m.GetAllPropertiesContext(context.Background(), svc.Name)
 	if err != nil {
 		log.Warnf("Could not open service %v: %v", svc.Name, err)
 		return
