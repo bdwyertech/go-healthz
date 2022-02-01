@@ -17,7 +17,7 @@ var remotelyDisabled ttlcache.SimpleCache = ttlcache.NewCache()
 
 func Remote(dnsRecords []string) {
 	if len(dnsRecords) > 0 {
-		remotelyDisabled.SetTTL(time.Duration(10 * time.Second))
+		remotelyDisabled.SetTTL(time.Duration(5 * time.Minute))
 		for _, r := range dnsRecords {
 			go RemoteFetcher(r)
 		}
