@@ -137,3 +137,17 @@ MyServiceName=disabled
 # Single record with multiple checks (comma seperated)
 MyServiceName=disabled,MyCommandName=disabled
 ```
+
+##### Terraform Example: Provisioning Killswitch TXT Records
+```terraform
+resource "dns_txt_record_set" "_healthchecks.myorg.net" {
+  zone = "myorg.net."
+  name = "_healthchecks"
+  txt = [
+    "amazon-cloudwatch-agent.service=disabled",
+    "my-application-service=disabled",
+    "my-app-check-command=disabled",
+  ]
+  ttl = 120
+}
+```
