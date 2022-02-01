@@ -43,5 +43,15 @@ func (svc *Service) Status() (status SvcStatus, err error) {
 	if !ok {
 		log.Fatal("Unable to convert response into SvcStatus")
 	}
+
+	if !status.Healthy {
+		// Check if disabled remotely via SRV Record
+		if dnsRecord, disabled := RemotelyDisabled(svc.Name); disabled {
+			status.Reason = "disabled remotely via " + dnsRecord
+			log.Infoln("Service", svc.Name, status.Reason)
+			status.Healthy = true
+		}
+	}
+
 	return
 }

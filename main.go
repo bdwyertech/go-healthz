@@ -24,6 +24,7 @@ import (
 
 type StatusConfig struct {
 	Bind     string     `yaml:"bind"`
+	Remote   []string   `yaml:"remote"`
 	Commands []*Command `yaml:"commands"`
 	Services []*Service `yaml:"services"`
 	Proxies  []*Proxy   `yaml:"proxies"`
@@ -75,6 +76,9 @@ func Run(cfgPath string) {
 	if err = yaml.Unmarshal(cfgBytes, &cfg); err != nil {
 		log.Fatal(err)
 	}
+
+	// Background Remote Disable
+	Remote(cfg.Remote)
 
 	r := mux.NewRouter()
 
