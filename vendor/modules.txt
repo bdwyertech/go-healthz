@@ -1,3 +1,6 @@
+# github.com/ReneKroon/ttlcache/v2 v2.11.0
+## explicit
+github.com/ReneKroon/ttlcache/v2
 # github.com/coreos/go-systemd/v22 v22.3.2
 ## explicit
 github.com/coreos/go-systemd/v22/dbus
@@ -29,7 +32,7 @@ github.com/sirupsen/logrus
 github.com/stretchr/testify/assert
 # golang.org/x/sync v0.0.0-20210220032951-036812b2e83c
 golang.org/x/sync/singleflight
-# golang.org/x/sys v0.0.0-20220110181412-a018aaa089fe
+# golang.org/x/sys v0.0.0-20220128215802-99c3d69c2c27
 ## explicit
 golang.org/x/sys/internal/unsafeheader
 golang.org/x/sys/unix

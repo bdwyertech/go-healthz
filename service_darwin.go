@@ -15,7 +15,8 @@ import (
 type SvcStatus struct {
 	Name      string
 	Healthy   bool
-	State     map[string]interface{}
+	Reason    string                 `json:",omitempty"`
+	State     map[string]interface{} `json:",omitempty"`
 	Timestamp time.Time
 }
 

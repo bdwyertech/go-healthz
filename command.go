@@ -22,6 +22,7 @@ type CmdStatus struct {
 	Error     string
 	Code      int
 	Timestamp time.Time
+	Reason    string `json:",omitempty"`
 }
 
 type Command struct {
@@ -59,6 +60,14 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 	status, ok := s.(CmdStatus)
 	if !ok {
 		log.Fatal("Unable to convert response into CmdStatus")
+	}
+	if !status.Healthy {
+		// Check if disabled remotely via SRV Record
+		if dnsRecord, disabled := RemotelyDisabled(cmd.Name); disabled {
+			status.Reason = "disabled remotely via " + dnsRecord
+			log.Infoln("Command", cmd.Name, status.Reason)
+			status.Healthy = true
+		}
 	}
 	return
 }
