@@ -126,13 +126,14 @@ A sample use case is to create this file if your bootstrapping process fails, e.
 In the event you wish to remotely disable a healthcheck, you can do so via DNS TXT records.  This is currently implemented for Commands and Services.
 ```yaml
 # In your go-healthz config file, add one or more target TXT records
-remote:
+remotes:
   - _healthcheck.myapp.myorg.net
+  - _healthcheck.global.myorg.net
 ```
 ```
 # Contents
 MyServiceName=disabled
 
-# Single record with multiple services (comma seperated)
-MyServiceName=disabled,AnotherService=disabled
+# Single record with multiple checks (comma seperated)
+MyServiceName=disabled,MyCommandName=disabled
 ```

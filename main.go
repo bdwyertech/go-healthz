@@ -24,7 +24,7 @@ import (
 
 type StatusConfig struct {
 	Bind     string     `yaml:"bind"`
-	Remote   []string   `yaml:"remote"`
+	Remotes  []string   `yaml:"remotes"`
 	Commands []*Command `yaml:"commands"`
 	Services []*Service `yaml:"services"`
 	Proxies  []*Proxy   `yaml:"proxies"`
@@ -32,11 +32,12 @@ type StatusConfig struct {
 }
 
 type GlobalStatus struct {
-	Healthy  bool
-	Reason   string          `json:",omitempty"`
-	Services []SvcStatus     `json:",omitempty"`
-	Commands []CmdStatus     `json:",omitempty"`
-	Requests []RequestStatus `json:",omitempty"`
+	Healthy        bool
+	UnhealthyCount int
+	Reason         string          `json:",omitempty"`
+	Services       []SvcStatus     `json:",omitempty"`
+	Commands       []CmdStatus     `json:",omitempty"`
+	Requests       []RequestStatus `json:",omitempty"`
 }
 
 func main() {
@@ -78,7 +79,7 @@ func Run(cfgPath string) {
 	}
 
 	// Background Remote Disable
-	Remote(cfg.Remote)
+	Remote(cfg.Remotes)
 
 	r := mux.NewRouter()
 
