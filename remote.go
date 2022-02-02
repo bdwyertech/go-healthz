@@ -33,6 +33,12 @@ func RemoteFetcher(dnsRecord string) {
 			txtrecords, err := net.DefaultResolver.LookupTXT(ctx, dnsRecord)
 			if err != nil {
 				if ctx.Err() == nil {
+					if dnsErr, ok := err.(*net.DNSError); ok {
+						if dnsErr.IsNotFound {
+							log.Debug(dnsErr)
+							return
+						}
+					}
 					log.Error(err)
 				}
 				return
@@ -44,7 +50,7 @@ func RemoteFetcher(dnsRecord string) {
 						log.Debugln("Invalid DNS entry:", dnsRecord, entry)
 						continue
 					}
-					if strings.TrimSpace(entry[1]) == "disabled" {
+					if strings.EqualFold(strings.TrimSpace(entry[1]), "disabled") {
 						if err = remotelyDisabled.Set(strings.TrimSpace(entry[0]), dnsRecord); err != nil {
 							log.Error(err)
 						}
