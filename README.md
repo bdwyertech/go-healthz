@@ -124,6 +124,9 @@ A sample use case is to create this file if your bootstrapping process fails, e.
 
 #### Remote Killswitch
 In the event you wish to remotely disable a healthcheck, you can do so via DNS TXT records.  This is currently implemented for Commands and Services.
+
+This was designed to prevent service-specific outages from causing cascading ASG failures on AWS.  For example, if you were monitoring the CloudWatch Log Agent, and the CloudWatch Logs API was to go down for a region, and somehow this took the agent with it, this might cause ASG/ALB instances to be replaced and newly instantiated instances to never become healthy, effectively an ASG/ALB refresh loop.
+
 ```yaml
 # In your go-healthz config file, add one or more target TXT records
 remotes:
