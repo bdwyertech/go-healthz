@@ -40,6 +40,13 @@ type GlobalStatus struct {
 	Requests       []RequestStatus `json:",omitempty"`
 }
 
+func init() {
+	if os.Getenv("HEALTHZ_DEBUG") != "" {
+		log.SetLevel(log.DebugLevel)
+	}
+	log.SetFormatter(&log.JSONFormatter{})
+}
+
 func main() {
 	dir, err := filepath.Abs(filepath.Dir(os.Args[0]))
 	if err != nil {
