@@ -127,11 +127,14 @@ In the event you wish to remotely disable a healthcheck, you can do so via DNS T
 
 This was designed to prevent service-specific outages from causing cascading ASG failures on AWS.  For example, if you were monitoring the CloudWatch Log Agent, and the CloudWatch Logs API was to go down for a region, and somehow this took the agent with it, this might cause ASG/ALB instances to be replaced and newly instantiated instances to never become healthy, effectively an ASG/ALB refresh loop.
 
+Subsequently, you may want to have have multiple scopes for global, regional or application-specific considerations.
+
 ```yaml
 # In your go-healthz config file, add one or more target TXT records
 remotes:
-  - _healthcheck.myapp.myorg.net
   - _healthcheck.global.myorg.net
+  - _healthcheck.regional.myorg.net
+  - _healthcheck.myapp.myorg.net
 ```
 ```
 # Contents
