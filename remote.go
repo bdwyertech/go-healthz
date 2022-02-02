@@ -30,9 +30,11 @@ func RemoteFetcher(dnsRecord string) {
 		ctx, cancel := context.WithTimeout(context.Background(), timeout)
 		go func() {
 			defer cancel()
-			txtrecords, err := net.LookupTXT(dnsRecord)
+			txtrecords, err := net.DefaultResolver.LookupTXT(ctx, dnsRecord)
 			if err != nil {
-				log.Error(err)
+				if ctx.Err() == nil {
+					log.Error(err)
+				}
 				return
 			}
 			for _, txt := range txtrecords {
@@ -55,9 +57,9 @@ func RemoteFetcher(dnsRecord string) {
 		case context.Canceled:
 			// Do Nothing
 		case context.DeadlineExceeded:
-			log.Errorln("DNS Request timed out:", ctxErr)
+			log.Errorln("DNS lookup timed out:", dnsRecord)
 		default:
-			log.Error(ctxErr)
+			log.Errorln(ctxErr, dnsRecord)
 		}
 		time.Sleep(2 * time.Minute)
 	}
