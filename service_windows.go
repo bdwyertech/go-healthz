@@ -21,6 +21,7 @@ type SvcStatus struct {
 }
 
 func (svc *Service) Check() (status SvcStatus, err error) {
+	defer func() { status.Timestamp = time.Now() }()
 	status.Name = svc.Name
 	m, err := mgr.Connect()
 	if err != nil {
@@ -44,8 +45,6 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 	if status.State.State == windows.SERVICE_RUNNING {
 		status.Healthy = true
 	}
-
-	status.Timestamp = time.Now()
 
 	return
 }

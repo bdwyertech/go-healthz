@@ -75,7 +75,7 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 func (command *Command) Run() (status CmdStatus, err error) {
 	status.Name = command.Name
 	status.Command = command.Command
-	status.Timestamp = time.Now()
+	defer func() { status.Timestamp = time.Now() }()
 
 	timeout := 5 * time.Second
 	if command.Timeout != "" {

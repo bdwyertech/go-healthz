@@ -21,6 +21,7 @@ type SvcStatus struct {
 }
 
 func (svc *Service) Check() (status SvcStatus, err error) {
+	defer func() { status.Timestamp = time.Now() }()
 	status.Name = svc.Name
 	out, err := exec.Command("/bin/launchctl", "list").Output()
 	if err != nil {
@@ -63,8 +64,6 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 	}
 
 	err = errors.New("Service not found")
-
-	status.Timestamp = time.Now()
 
 	return
 }

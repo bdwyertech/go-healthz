@@ -75,7 +75,7 @@ func (req *Request) Status() (status RequestStatus, err error) {
 
 func (req *Request) Run() (status RequestStatus, err error) {
 	status.Name = req.Name
-	status.Timestamp = time.Now()
+	defer func() { status.Timestamp = time.Now() }()
 
 	timeout := 5 * time.Second
 	if req.Timeout != "" {

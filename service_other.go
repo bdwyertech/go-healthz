@@ -24,6 +24,7 @@ type SvcStatus struct {
 }
 
 func (svc *Service) Check() (status SvcStatus, err error) {
+	defer func() { status.Timestamp = time.Now() }()
 	switch {
 	case isSystemD():
 		return svc.checkSystemD()
@@ -61,8 +62,6 @@ func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 		status.State[v] = s[v]
 	}
 
-	status.Timestamp = time.Now()
-
 	return
 }
 
@@ -93,8 +92,6 @@ func (svc *Service) checkSysV() (status SvcStatus, err error) {
 	if strings.Contains(output, "is running") {
 		status.Healthy = true
 	}
-
-	status.Timestamp = time.Now()
 
 	return
 }
