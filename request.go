@@ -36,7 +36,7 @@ type Request struct {
 type RequestStatus struct {
 	Name       string
 	Healthy    bool
-	Error      error                  `json:",omitempty"`
+	Error      string                 `json:",omitempty"`
 	Response   map[string]interface{} `json:",omitempty"`
 	Status     string                 `json:",omitempty"`
 	StatusCode int                    `json:",omitempty"`
@@ -126,10 +126,10 @@ func (req *Request) Run() (status RequestStatus, err error) {
 	if err != nil {
 		status.Healthy = false
 		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
-			status.Error = errors.Wrap(ctxErr, "Request timed out")
+			status.Error = errors.Wrap(ctxErr, "Request timed out").Error()
 			log.Warnf("%v: %v", req.Name, status.Error)
 		} else {
-			status.Error = err
+			status.Error = err.Error()
 		}
 		return
 	}
