@@ -10,7 +10,7 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/ReneKroon/ttlcache/v2"
+	"github.com/jellydator/ttlcache/v2"
 )
 
 var remotelyDisabled ttlcache.SimpleCache = ttlcache.NewCache()
@@ -33,11 +33,9 @@ func RemoteFetcher(dnsRecord string) {
 			txtrecords, err := net.DefaultResolver.LookupTXT(ctx, dnsRecord)
 			if err != nil {
 				if ctx.Err() == nil {
-					if dnsErr, ok := err.(*net.DNSError); ok {
-						if dnsErr.IsNotFound {
-							log.Debug(dnsErr)
-							return
-						}
+					if dnsErr, ok := err.(*net.DNSError); ok && dnsErr.IsNotFound {
+						log.Debug(dnsErr)
+						return
 					}
 					log.Error(err)
 				}

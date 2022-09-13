@@ -6,7 +6,6 @@ import (
 	"context"
 	"encoding/json"
 	"flag"
-	"io/ioutil"
 	"net/http"
 	"net/http/httputil"
 	"os"
@@ -69,19 +68,13 @@ func main() {
 }
 
 func Run(cfgPath string) {
-	cfgFile, err := os.Open(cfgPath)
+	cfgFile, err := os.ReadFile(cfgPath)
 	if err != nil {
 		log.Fatal(err)
 	}
-
-	cfgBytes, err := ioutil.ReadAll(cfgFile)
-	if err != nil {
-		log.Fatal(err)
-	}
-	cfgFile.Close()
 
 	var cfg StatusConfig
-	if err = yaml.Unmarshal(cfgBytes, &cfg); err != nil {
+	if err = yaml.Unmarshal(cfgFile, &cfg); err != nil {
 		log.Fatal(err)
 	}
 

@@ -3,7 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
-	"io/ioutil"
+	"io"
 	"net/http"
 	"os"
 	"path/filepath"
@@ -31,12 +31,12 @@ func TestDefault(t *testing.T) {
 	resp, err := http.Get("http://localhost:3456")
 	assert.Nil(t, err)
 	defer resp.Body.Close()
-	body, err := ioutil.ReadAll(resp.Body)
+	body, err := io.ReadAll(resp.Body)
 	assert.Nil(t, err)
 
 	var status GlobalStatus
 
-	err = json.Unmarshal([]byte(body), &status)
+	err = json.Unmarshal(body, &status)
 	assert.Nil(t, err, "Status should be a valid JSON GlobalStatus")
 
 	assert.Equal(t, true, status.Healthy, "Global status should be healthy")

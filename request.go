@@ -7,7 +7,6 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"io/ioutil"
 	"net"
 	"net/http"
 	"strings"
@@ -125,7 +124,7 @@ func (req *Request) Run() (status RequestStatus, err error) {
 	resp, err := client.Do(r)
 	if err != nil {
 		status.Healthy = false
-		if ctxErr := ctx.Err(); ctxErr == context.DeadlineExceeded {
+		if ctxErr := ctx.Err(); errors.Is(err, context.DeadlineExceeded) {
 			status.Error = errors.Wrap(ctxErr, "Request timed out").Error()
 			log.Warnf("%v: %v", req.Name, status.Error)
 		} else {
@@ -155,7 +154,7 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		json.NewDecoder(resp.Body).Decode(&status.Response)
 	default:
 		status.Response = make(map[string]interface{})
-		response, err := ioutil.ReadAll(resp.Body)
+		response, err := io.ReadAll(resp.Body)
 		if err != nil {
 			status.Response["BodyDecodeFailure"] = err
 		} else {
@@ -167,7 +166,7 @@ func (req *Request) Run() (status RequestStatus, err error) {
 }
 
 func (req *Request) GetBody() (body io.Reader) {
-	if req.Method == "POST" {
+	if req.Method == http.MethodPost {
 		return strings.NewReader(strings.TrimSpace(req.Body))
 	}
 
