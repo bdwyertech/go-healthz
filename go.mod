@@ -10,7 +10,7 @@ require (
 	github.com/kofalt/go-memoize v0.0.0-20210721235729-46a601ff34b8
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.0
-	github.com/stretchr/testify v1.8.0
+	github.com/stretchr/testify v1.8.1
 	golang.org/x/sys v0.0.0-20220913175220-63ea55921009
 	gopkg.in/yaml.v3 v3.0.1
 )
