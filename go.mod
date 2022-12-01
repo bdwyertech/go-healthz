@@ -3,7 +3,7 @@ module github.com/bdwyertech/go-healthz
 go 1.19
 
 require (
-	github.com/coreos/go-systemd/v22 v22.3.2
+	github.com/coreos/go-systemd/v22 v22.5.0
 	github.com/gorilla/mux v1.8.0
 	github.com/jellydator/ttlcache/v2 v2.11.1
 	github.com/kardianos/service v1.2.1
