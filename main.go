@@ -5,6 +5,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"errors"
 	"flag"
 	"net/http"
 	"net/http/httputil"
@@ -236,7 +237,9 @@ func Run(cfgPath string) {
 	// Run our server in a goroutine so that it doesn't block.
 	go func() {
 		if err := srv.ListenAndServe(); err != nil {
-			log.Error(err)
+			if !errors.Is(err, http.ErrServerClosed) {
+				log.Error(err)
+			}
 		}
 	}()
 
@@ -251,7 +254,7 @@ func Run(cfgPath string) {
 	defer cancel()
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
-	srv.Shutdown(ctx)
 	log.Info("Go-Healthz shutting down")
+	srv.Shutdown(ctx)
 	os.Exit(0)
 }
