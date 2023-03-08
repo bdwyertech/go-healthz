@@ -5,7 +5,7 @@ jobs:
     name: Build
     strategy:
       matrix:
-        go: [1.19]
+        go: ['1.19']
     runs-on: ubuntu-latest
     container: golang:${{ matrix.go }}
     steps:
@@ -17,15 +17,16 @@ jobs:
       - name: Git Info
         id: git
         run: |
-          echo ::set-output name=SOURCE_NAME::${GITHUB_REF#refs/*/}
-          echo ::set-output name=SOURCE_BRANCH::${GITHUB_REF#refs/heads/}
-          echo ::set-output name=SOURCE_TAG::${GITHUB_REF#refs/tags/}
+          echo "SOURCE_NAME=${GITHUB_REF#refs/*/}" >> $GITHUB_OUTPUT
+          echo "SOURCE_BRANCH=${GITHUB_REF#refs/heads/}" >> $GITHUB_OUTPUT
+          echo "SOURCE_TAG=${GITHUB_REF#refs/tags/}" >> $GITHUB_OUTPUT
 
       - name: Test
         env:
           GOFLAGS: '-mod=vendor'
-          STATICCHECK_VERSION: 'v0.3.3'
+          STATICCHECK_VERSION: '2023.1.2'
         run: |
+          git config --global --add safe.directory $GITHUB_WORKSPACE
           wget -qO- https://github.com/dominikh/go-tools/releases/download/${STATICCHECK_VERSION}/staticcheck_linux_amd64.tar.gz | tar zxf - --directory /usr/local/bin --strip-components=1 staticcheck/staticcheck
           go fmt $(go list ./... | grep -v /vendor/) | xargs -I {} -r /bin/sh -c "/bin/echo {} && exit 1"
           go vet $(go list ./... | grep -v /vendor/)
