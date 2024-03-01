@@ -4,7 +4,7 @@ go 1.19
 
 require (
 	github.com/coreos/go-systemd/v22 v22.5.0
-	github.com/gorilla/mux v1.8.0
+	github.com/gorilla/mux v1.8.1
 	github.com/jellydator/ttlcache/v2 v2.11.1
 	github.com/kardianos/service v1.2.2
 	github.com/kofalt/go-memoize v0.0.0-20220914132407-0b5d6a304579
