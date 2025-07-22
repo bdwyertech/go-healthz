@@ -3,7 +3,6 @@
 // license that can be found in the LICENSE file.
 
 //go:build windows
-// +build windows
 
 // Package svc provides everything required to build Windows service.
 package svc
@@ -13,7 +12,6 @@ import (
 	"sync"
 	"unsafe"
 
-	"golang.org/x/sys/internal/unsafeheader"
 	"golang.org/x/sys/windows"
 )
 
@@ -66,6 +64,15 @@ const (
 	AcceptPowerEvent            = Accepted(windows.SERVICE_ACCEPT_POWEREVENT)
 	AcceptSessionChange         = Accepted(windows.SERVICE_ACCEPT_SESSIONCHANGE)
 	AcceptPreShutdown           = Accepted(windows.SERVICE_ACCEPT_PRESHUTDOWN)
+)
+
+// ActivityStatus allows for services to be selected based on active and inactive categories of service state.
+type ActivityStatus uint32
+
+const (
+	Active      = ActivityStatus(windows.SERVICE_ACTIVE)
+	Inactive    = ActivityStatus(windows.SERVICE_INACTIVE)
+	AnyActivity = ActivityStatus(windows.SERVICE_STATE_ALL)
 )
 
 // Status combines State and Accepted commands to fully describe running service.
@@ -125,10 +132,10 @@ type ctlEvent struct {
 
 // service provides access to windows service api.
 type service struct {
-	name    string
-	h       windows.Handle
-	c       chan ctlEvent
-	handler Handler
+	namePointer *uint16
+	h           windows.Handle
+	c           chan ctlEvent
+	handler     Handler
 }
 
 type exitCode struct {
@@ -192,9 +199,8 @@ var (
 )
 
 func ctlHandler(ctl, evtype, evdata, context uintptr) uintptr {
-	s := (*service)(unsafe.Pointer(context))
 	e := ctlEvent{cmd: Cmd(ctl), eventType: uint32(evtype), eventData: evdata, context: 123456} // Set context to 123456 to test issue #25660.
-	s.c <- e
+	theService.c <- e
 	return 0
 }
 
@@ -203,7 +209,7 @@ var theService service // This is, unfortunately, a global, which means only one
 // serviceMain is the entry point called by the service manager, registered earlier by
 // the call to StartServiceCtrlDispatcher.
 func serviceMain(argc uint32, argv **uint16) uintptr {
-	handle, err := windows.RegisterServiceCtrlHandlerEx(windows.StringToUTF16Ptr(theService.name), ctlHandlerCallback, uintptr(unsafe.Pointer(&theService)))
+	handle, err := windows.RegisterServiceCtrlHandlerEx(theService.namePointer, ctlHandlerCallback, 0)
 	if sysErr, ok := err.(windows.Errno); ok {
 		return uintptr(sysErr)
 	} else if err != nil {
@@ -213,11 +219,7 @@ func serviceMain(argc uint32, argv **uint16) uintptr {
 	defer func() {
 		theService.h = 0
 	}()
-	var args16 []*uint16
-	hdr := (*unsafeheader.Slice)(unsafe.Pointer(&args16))
-	hdr.Data = unsafe.Pointer(argv)
-	hdr.Len = int(argc)
-	hdr.Cap = int(argc)
+	args16 := unsafe.Slice(argv, int(argc))
 
 	args := make([]string, len(args16))
 	for i, a := range args16 {
@@ -278,15 +280,21 @@ loop:
 
 // Run executes service name by calling appropriate handler function.
 func Run(name string, handler Handler) error {
+	// Check to make sure that the service name is valid.
+	namePointer, err := windows.UTF16PtrFromString(name)
+	if err != nil {
+		return err
+	}
+
 	initCallbacks.Do(func() {
 		ctlHandlerCallback = windows.NewCallback(ctlHandler)
 		serviceMainCallback = windows.NewCallback(serviceMain)
 	})
-	theService.name = name
+	theService.namePointer = namePointer
 	theService.handler = handler
 	theService.c = make(chan ctlEvent)
 	t := []windows.SERVICE_TABLE_ENTRY{
-		{ServiceName: windows.StringToUTF16Ptr(theService.name), ServiceProc: serviceMainCallback},
+		{ServiceName: namePointer, ServiceProc: serviceMainCallback},
 		{ServiceName: nil, ServiceProc: 0},
 	}
 	return windows.StartServiceCtrlDispatcher(&t[0])
