@@ -5,7 +5,7 @@ jobs:
     name: Build
     strategy:
       matrix:
-        go: ['1.19']
+        go: ['1.24']
     runs-on: ubuntu-latest
     container: golang:${{ matrix.go }}
     steps:
@@ -24,7 +24,7 @@ jobs:
       - name: Test
         env:
           GOFLAGS: '-mod=vendor'
-          STATICCHECK_VERSION: '2023.1.2'
+          STATICCHECK_VERSION: '2025.1.1'
         run: |
           git config --global --add safe.directory $GITHUB_WORKSPACE
           wget -qO- https://github.com/dominikh/go-tools/releases/download/${STATICCHECK_VERSION}/staticcheck_linux_amd64.tar.gz | tar zxf - --directory /usr/local/bin --strip-components=1 staticcheck/staticcheck
@@ -36,7 +36,7 @@ jobs:
 
       - name: Run GoReleaser
         uses: goreleaser/goreleaser-action@v5
-        if: startsWith(github.ref, 'refs/tags/') && (matrix.go == 1.19)
+        if: startsWith(github.ref, 'refs/tags/') && (matrix.go == 1.24)
         with:
           version: latest
           args: release
