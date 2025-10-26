@@ -6,6 +6,7 @@ require (
 	github.com/coreos/go-systemd/v22 v22.6.0
 	github.com/gorilla/mux v1.8.1
 	github.com/jellydator/ttlcache/v2 v2.11.1
+	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/kardianos/service v1.2.4
 	github.com/kofalt/go-memoize v0.0.0-20240506050413-9e5eb99a0f2a
 	github.com/pkg/errors v0.9.1
