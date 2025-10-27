@@ -10,14 +10,16 @@ import (
 
 	log "github.com/sirupsen/logrus"
 
-	"github.com/jellydator/ttlcache/v2"
+	"github.com/jellydator/ttlcache/v3"
 )
 
-var remotelyDisabled ttlcache.SimpleCache = ttlcache.NewCache()
+var remotelyDisabled = ttlcache.New[string, string](
+	ttlcache.WithTTL[string, string](5*time.Minute),
+	ttlcache.WithDisableTouchOnHit[string, string](),
+)
 
 func Remote(dnsRecords []string) {
 	if len(dnsRecords) > 0 {
-		remotelyDisabled.SetTTL(time.Duration(5 * time.Minute))
 		for _, r := range dnsRecords {
 			go RemoteFetcher(r)
 		}
@@ -49,9 +51,7 @@ func RemoteFetcher(dnsRecord string) {
 						continue
 					}
 					if strings.EqualFold(strings.TrimSpace(entry[1]), "disabled") {
-						if err = remotelyDisabled.Set(strings.TrimSpace(entry[0]), dnsRecord); err != nil {
-							log.Error(err)
-						}
+						remotelyDisabled.Set(strings.TrimSpace(entry[0]), dnsRecord, ttlcache.DefaultTTL)
 					}
 				}
 			}
@@ -71,8 +71,8 @@ func RemoteFetcher(dnsRecord string) {
 
 func RemotelyDisabled(check string) (dnsRecord string, disabled bool) {
 	// Check if disabled remotely via SRV Record
-	if v, err := remotelyDisabled.Get(check); err == nil {
-		dnsRecord, disabled = v.(string)
+	if remotelyDisabled.Has(check) {
+		return remotelyDisabled.Get(check).Value(), true
 	}
 	return
 }
