@@ -50,11 +50,6 @@ jobs:
       security-events: write # For Scan results
     container: golang:1.25
     steps:
-      - name: Install Dependencies
-        run: |
-          dnf install -y openssl-devel systemd-devel gcc git wget findutils
-          ln -s /usr/include/systemd/ /opt/cross/aarch64-ol8u10-linux-gnu/include/systemd
-
       - name: Check out code into the Go module directory
         uses: actions/checkout@v6
         with:
