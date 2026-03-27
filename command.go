@@ -95,9 +95,7 @@ func (command *Command) Run() (status CmdStatus, err error) {
 	cmdArgs := strings.Fields(command.Command)
 
 	cmd := exec.CommandContext(ctx, cmdArgs[0])
-	if len(cmdArgs) > 1 {
-		cmd.Args = cmdArgs[1:]
-	}
+	cmd.Args = cmdArgs
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
