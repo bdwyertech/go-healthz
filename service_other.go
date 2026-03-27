@@ -47,6 +47,10 @@ func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 	}
 	defer m.Close()
 
+	if strings.ContainsAny(svc.Name, "*?[]") {
+		return svc.checkSystemDPattern(m)
+	}
+
 	s, err := m.GetAllPropertiesContext(context.Background(), svc.Name)
 	if err != nil {
 		log.Warnf("Could not open service %v: %v", svc.Name, err)
@@ -61,6 +65,47 @@ func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 		}
 		status.State[v] = s[v]
 	}
+
+	return
+}
+
+func (svc *Service) checkSystemDPattern(m *dbus.Conn) (status SvcStatus, err error) {
+	status.Name = svc.Name
+	status.State = make(map[string]interface{})
+
+	units, err := m.ListUnitsByPatternsContext(context.Background(), nil, []string{svc.Name})
+	if err != nil {
+		log.Warnf("Could not list units for pattern %v: %v", svc.Name, err)
+		return
+	}
+
+	if len(units) == 0 {
+		err = fmt.Errorf("no units found matching pattern: %s", svc.Name)
+		status.State["Error"] = err.Error()
+		return
+	}
+
+	// Track the state of all matching units
+	matchedUnits := make([]map[string]interface{}, 0, len(units))
+	allHealthy := true
+
+	for _, unit := range units {
+		unitInfo := make(map[string]interface{})
+		unitInfo["Name"] = unit.Name
+		unitInfo["SubState"] = unit.SubState
+		unitInfo["ActiveState"] = unit.ActiveState
+		unitInfo["LoadState"] = unit.LoadState
+
+		if unit.SubState != "running" {
+			allHealthy = false
+		}
+
+		matchedUnits = append(matchedUnits, unitInfo)
+	}
+
+	status.State["MatchedUnits"] = matchedUnits
+	status.State["MatchCount"] = len(units)
+	status.Healthy = allHealthy
 
 	return
 }
