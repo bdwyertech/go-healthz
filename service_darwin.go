@@ -5,6 +5,7 @@ package main
 import (
 	"bufio"
 	"bytes"
+	"context"
 	"errors"
 	"os/exec"
 	"strconv"
@@ -20,10 +21,10 @@ type SvcStatus struct {
 	Timestamp time.Time
 }
 
-func (svc *Service) Check() (status SvcStatus, err error) {
+func (svc *Service) Check(ctx context.Context) (status SvcStatus, err error) {
 	defer func() { status.Timestamp = time.Now() }()
 	status.Name = svc.Name
-	out, err := exec.Command("/bin/launchctl", "list").Output()
+	out, err := exec.CommandContext(ctx, "/bin/launchctl", "list").Output()
 	if err != nil {
 		return
 	}

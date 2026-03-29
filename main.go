@@ -89,8 +89,8 @@ func Run(cfgPath string) {
 
 	for _, _svc := range cfg.Services {
 		svc := _svc
-		r.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, _ *http.Request) {
-			status, _ := svc.Status()
+		r.HandleFunc("/service/"+svc.Name, func(w http.ResponseWriter, r *http.Request) {
+			status, _ := svc.Status(r.Context())
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
@@ -104,8 +104,8 @@ func Run(cfgPath string) {
 
 	for _, _cmd := range cfg.Commands {
 		cmd := _cmd
-		r.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, _ *http.Request) {
-			status, _ := cmd.Status()
+		r.HandleFunc("/command/"+cmd.Name, func(w http.ResponseWriter, r *http.Request) {
+			status, _ := cmd.Status(r.Context())
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
@@ -119,8 +119,8 @@ func Run(cfgPath string) {
 
 	for _, _req := range cfg.Requests {
 		req := _req
-		r.HandleFunc("/request/"+req.Name, func(w http.ResponseWriter, _ *http.Request) {
-			status, _ := req.Status()
+		r.HandleFunc("/request/"+req.Name, func(w http.ResponseWriter, r *http.Request) {
+			status, _ := req.Status(r.Context())
 			w.Header().Set("Content-Type", "application/json")
 			if status.Healthy {
 				w.WriteHeader(http.StatusOK)
@@ -141,7 +141,7 @@ func Run(cfgPath string) {
 		log.Fatal(err)
 	}
 
-	r.HandleFunc("/", func(w http.ResponseWriter, _ *http.Request) {
+	r.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
 		w.Header().Set("Content-Type", "application/json")
 		global := GlobalStatus{}
 		global.Healthy = true
@@ -166,7 +166,7 @@ func Run(cfgPath string) {
 			wg.Add(1)
 			go func(i int, svc *Service) {
 				defer wg.Done()
-				status, _ := svc.Status()
+				status, _ := svc.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Service unhealthy:", svc.Name)
 					healthy.Store(false)
@@ -183,7 +183,7 @@ func Run(cfgPath string) {
 			wg.Add(1)
 			go func(i int, cmd *Command) {
 				defer wg.Done()
-				status, _ := cmd.Status()
+				status, _ := cmd.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Command unhealthy:", cmd.Name)
 					healthy.Store(false)
@@ -200,7 +200,7 @@ func Run(cfgPath string) {
 			wg.Add(1)
 			go func(i int, req *Request) {
 				defer wg.Done()
-				status, _ := req.Status()
+				status, _ := req.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Request unhealthy:", req.Name)
 					healthy.Store(false)
@@ -209,8 +209,22 @@ func Run(cfgPath string) {
 			}(i, req)
 		}
 
-		// Waiters
-		wg.Wait()
+		// Wait for checks or request context cancellation
+		done := make(chan struct{})
+		go func() {
+			wg.Wait()
+			close(done)
+		}()
+
+		select {
+		case <-done:
+			// All checks completed
+		case <-r.Context().Done():
+			log.Warn("Health check timed out waiting for checks")
+			w.WriteHeader(http.StatusServiceUnavailable)
+			json.NewEncoder(w).Encode(GlobalStatus{Healthy: false, Reason: "health check timed out"})
+			return
+		}
 
 		global.Healthy = healthy.Load()
 

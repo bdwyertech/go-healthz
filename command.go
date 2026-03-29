@@ -52,9 +52,9 @@ func (cmd *Command) Cached() (cache *memoize.Memoizer) {
 	return cmd.cache
 }
 
-func (cmd *Command) Status() (status CmdStatus, err error) {
+func (cmd *Command) Status(ctx context.Context) (status CmdStatus, err error) {
 	s, err, _ := cmd.Cached().Memoize(cmd.Name, func() (interface{}, error) {
-		return cmd.Run()
+		return cmd.Run(ctx)
 	})
 
 	status, ok := s.(CmdStatus)
@@ -72,7 +72,7 @@ func (cmd *Command) Status() (status CmdStatus, err error) {
 	return
 }
 
-func (command *Command) Run() (status CmdStatus, err error) {
+func (command *Command) Run(ctx context.Context) (status CmdStatus, err error) {
 	status.Name = command.Name
 	status.Command = command.Command
 	defer func() { status.Timestamp = time.Now() }()
@@ -89,7 +89,7 @@ func (command *Command) Run() (status CmdStatus, err error) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmdArgs := strings.Fields(command.Command)

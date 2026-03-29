@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -20,7 +21,7 @@ type SvcStatus struct {
 	Timestamp time.Time
 }
 
-func (svc *Service) Check() (status SvcStatus, err error) {
+func (svc *Service) Check(ctx context.Context) (status SvcStatus, err error) {
 	defer func() { status.Timestamp = time.Now() }()
 	status.Name = svc.Name
 	m, err := mgr.Connect()

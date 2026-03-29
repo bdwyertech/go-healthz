@@ -42,7 +42,7 @@ func TestSensitiveRequestClosesBody(t *testing.T) {
 	}
 
 	// First call establishes a TCP connection
-	status1, err := req.Run()
+	status1, err := req.Run(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, 200, status1.StatusCode)
 
@@ -50,7 +50,7 @@ func TestSensitiveRequestClosesBody(t *testing.T) {
 	connsBefore := newConnCount.Load()
 
 	// Second call should reuse the connection if the body was properly closed
-	status2, err := req.Run()
+	status2, err := req.Run(t.Context())
 	assert.NoError(t, err)
 	assert.Equal(t, 200, status2.StatusCode)
 
@@ -87,7 +87,7 @@ func TestTransportReuse(t *testing.T) {
 		Sensitive: false,
 	}
 
-	status1, err := req.Run()
+	status1, err := req.Run(t.Context())
 	assert.NoError(t, err)
 	assert.True(t, status1.Healthy)
 
@@ -95,7 +95,7 @@ func TestTransportReuse(t *testing.T) {
 	connsBefore := newConnCount.Load()
 
 	// With a shared transport, the idle connection is reused
-	status2, err := req.Run()
+	status2, err := req.Run(t.Context())
 	assert.NoError(t, err)
 	assert.True(t, status2.Healthy)
 
@@ -138,7 +138,7 @@ func TestSensitiveRequestOmitsBody(t *testing.T) {
 				Sensitive: true,
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.True(t, status.Healthy)
 			assert.Nil(t, status.Response, "Sensitive response should have nil Response for %s", ct)
@@ -168,7 +168,7 @@ func TestSensitiveRequestOmitsBodyAllStatusCodes(t *testing.T) {
 				Sensitive: true,
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.Nil(t, status.Response, "Sensitive response should have nil Response for status %d", code)
 		})
@@ -205,7 +205,7 @@ func TestJSONBodyDecoding(t *testing.T) {
 				Codes:  []int{200},
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.NotNil(t, status.Response)
 			assert.Equal(t, tc.checkVal, status.Response[tc.checkKey])
@@ -235,7 +235,7 @@ func TestJSONContentTypeVariants(t *testing.T) {
 				Codes:  []int{200},
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.NotNil(t, status.Response)
 			assert.Equal(t, "success", status.Response["result"])
@@ -259,7 +259,7 @@ func TestEmptyJSONBody(t *testing.T) {
 		Codes:  []int{200},
 	}
 
-	status, err := req.Run()
+	status, err := req.Run(t.Context())
 	assert.NoError(t, err)
 
 	expected, _ := json.Marshal(map[string]interface{}{})
@@ -296,7 +296,7 @@ func TestNonJSONBodyReadAsString(t *testing.T) {
 				Codes:  []int{200},
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.NotNil(t, status.Response)
 			assert.Equal(t, tc.body, status.Response["Body"])
@@ -340,7 +340,7 @@ func TestHealthStatusDetermination(t *testing.T) {
 				Codes:  tc.reqCodes,
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, tc.wantHealth, status.Healthy,
 				"Healthy should be %v for status %d with codes %v",
@@ -367,7 +367,7 @@ func TestStatusCodeAndStatusMatch(t *testing.T) {
 				Codes:  []int{code},
 			}
 
-			status, err := req.Run()
+			status, err := req.Run(t.Context())
 			assert.NoError(t, err)
 			assert.Equal(t, code, status.StatusCode)
 			assert.Contains(t, status.Status, fmt.Sprintf("%d", code))
@@ -411,7 +411,7 @@ func TestHealthStatusProperty(t *testing.T) {
 			Codes:  codes,
 		}
 
-		status, err := req.Run()
+		status, err := req.Run(t.Context())
 		if err != nil {
 			return false
 		}
@@ -463,7 +463,7 @@ func TestBodyParsingProperty(t *testing.T) {
 			Codes:  []int{200},
 		}
 
-		status, err := req.Run()
+		status, err := req.Run(t.Context())
 		if err != nil {
 			return false
 		}
@@ -491,7 +491,7 @@ func TestNameAndTimestamp(t *testing.T) {
 	}
 
 	before := time.Now()
-	status, err := req.Run()
+	status, err := req.Run(t.Context())
 	after := time.Now()
 
 	assert.NoError(t, err)

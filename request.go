@@ -73,9 +73,9 @@ func (req *Request) getTransport() *http.Transport {
 	return req.transport
 }
 
-func (req *Request) Status() (status RequestStatus, err error) {
+func (req *Request) Status(ctx context.Context) (status RequestStatus, err error) {
 	s, err, _ := req.Cached().Memoize(req.Name, func() (interface{}, error) {
-		return req.Run()
+		return req.Run(ctx)
 	})
 
 	status, ok := s.(RequestStatus)
@@ -85,7 +85,7 @@ func (req *Request) Status() (status RequestStatus, err error) {
 	return
 }
 
-func (req *Request) Run() (status RequestStatus, err error) {
+func (req *Request) Run(ctx context.Context) (status RequestStatus, err error) {
 	status.Name = req.Name
 	defer func() { status.Timestamp = time.Now() }()
 
@@ -101,7 +101,7 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		}
 	}
 
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	r, err := http.NewRequestWithContext(ctx, req.Method, req.Url, req.GetBody())

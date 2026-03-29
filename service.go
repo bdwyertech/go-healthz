@@ -3,6 +3,7 @@
 package main
 
 import (
+	"context"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -34,9 +35,9 @@ func (svc *Service) Cached() (cache *memoize.Memoizer) {
 	return svc.cache
 }
 
-func (svc *Service) Status() (status SvcStatus, err error) {
+func (svc *Service) Status(ctx context.Context) (status SvcStatus, err error) {
 	s, err, _ := svc.Cached().Memoize(svc.Name, func() (interface{}, error) {
-		return svc.Check()
+		return svc.Check(ctx)
 	})
 
 	status, ok := s.(SvcStatus)

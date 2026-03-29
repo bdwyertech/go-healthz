@@ -23,13 +23,13 @@ type SvcStatus struct {
 	Timestamp time.Time
 }
 
-func (svc *Service) Check() (status SvcStatus, err error) {
+func (svc *Service) Check(ctx context.Context) (status SvcStatus, err error) {
 	defer func() { status.Timestamp = time.Now() }()
 	switch {
 	case isSystemD():
-		return svc.checkSystemD()
+		return svc.checkSystemD(ctx)
 	case isRedhatSysV(), isDebianSysV():
-		return svc.checkSysV()
+		return svc.checkSysV(ctx)
 	default:
 		log.Fatal("Service checks on this platform are not supported yet!")
 	}
@@ -37,21 +37,25 @@ func (svc *Service) Check() (status SvcStatus, err error) {
 	return
 }
 
-func (svc *Service) checkSystemD() (status SvcStatus, err error) {
+func (svc *Service) checkSystemD(ctx context.Context) (status SvcStatus, err error) {
 	status.Name = svc.Name
 
-	m, err := dbus.NewWithContext(context.Background())
+	ctx, cancel := context.WithTimeout(ctx, 10*time.Second)
+	defer cancel()
+
+	m, err := dbus.NewWithContext(ctx)
 
 	if err != nil {
-		log.Fatal("SCM connection failed: ", err)
+		log.Warnf("SCM connection failed: %v", err)
+		return
 	}
 	defer m.Close()
 
 	if strings.ContainsAny(svc.Name, "*?[]") {
-		return svc.checkSystemDPattern(m)
+		return svc.checkSystemDPattern(ctx, m)
 	}
 
-	s, err := m.GetAllPropertiesContext(context.Background(), svc.Name)
+	s, err := m.GetAllPropertiesContext(ctx, svc.Name)
 	if err != nil {
 		log.Warnf("Could not open service %v: %v", svc.Name, err)
 		return
@@ -69,11 +73,11 @@ func (svc *Service) checkSystemD() (status SvcStatus, err error) {
 	return
 }
 
-func (svc *Service) checkSystemDPattern(m *dbus.Conn) (status SvcStatus, err error) {
+func (svc *Service) checkSystemDPattern(ctx context.Context, m *dbus.Conn) (status SvcStatus, err error) {
 	status.Name = svc.Name
 	status.State = make(map[string]interface{})
 
-	units, err := m.ListUnitsByPatternsContext(context.Background(), nil, []string{svc.Name})
+	units, err := m.ListUnitsByPatternsContext(ctx, nil, []string{svc.Name})
 	if err != nil {
 		log.Warnf("Could not list units for pattern %v: %v", svc.Name, err)
 		return
@@ -110,13 +114,13 @@ func (svc *Service) checkSystemDPattern(m *dbus.Conn) (status SvcStatus, err err
 	return
 }
 
-func (svc *Service) checkSysV() (status SvcStatus, err error) {
+func (svc *Service) checkSysV(ctx context.Context) (status SvcStatus, err error) {
 	status.Name = svc.Name
 
 	status.State = make(map[string]interface{})
 
 	timeout := 5 * time.Second
-	ctx, cancel := context.WithTimeout(context.Background(), timeout)
+	ctx, cancel := context.WithTimeout(ctx, timeout)
 	defer cancel()
 
 	cmd := exec.CommandContext(ctx, "service", svc.Name, "status")
