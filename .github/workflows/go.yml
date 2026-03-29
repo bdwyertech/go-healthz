@@ -87,6 +87,6 @@ jobs:
           SOURCE_TAG: ${{ steps.git.outputs.SOURCE_TAG }}
 
       - name: Attest Checksums
-        uses: actions/attest-build-provenance@v3
+        uses: actions/attest-build-provenance@v4
         with:
           subject-checksums: ./dist/checksums.txt
