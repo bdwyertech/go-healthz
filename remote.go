@@ -4,6 +4,7 @@ package main
 
 import (
 	"context"
+	"errors"
 	"net"
 	"strings"
 	"time"
@@ -18,31 +19,36 @@ var remotelyDisabled = ttlcache.New(
 	ttlcache.WithDisableTouchOnHit[string, string](),
 )
 
-func Remote(dnsRecords []string) {
-	if len(dnsRecords) > 0 {
-		for _, r := range dnsRecords {
-			go RemoteFetcher(r)
-		}
+func Remote(ctx context.Context, dnsRecords []string) {
+	for _, r := range dnsRecords {
+		go RemoteFetcher(ctx, r)
 	}
 }
 
-func RemoteFetcher(dnsRecord string) {
+func RemoteFetcher(ctx context.Context, dnsRecord string) {
 	for {
-		timeout := 5 * time.Second
-		ctx, cancel := context.WithTimeout(context.Background(), timeout)
-		go func() {
-			defer cancel()
-			txtrecords, err := net.DefaultResolver.LookupTXT(ctx, dnsRecord)
-			if err != nil {
-				if ctx.Err() == nil {
-					if dnsErr, ok := err.(*net.DNSError); ok && dnsErr.IsNotFound {
-						log.Debug(dnsErr)
-						return
-					}
-					log.Error(err)
-				}
-				return
+		select {
+		case <-ctx.Done():
+			return
+		default:
+		}
+
+		lookupCtx, cancel := context.WithTimeout(ctx, 5*time.Second)
+		txtrecords, err := net.DefaultResolver.LookupTXT(lookupCtx, dnsRecord)
+		cancel()
+
+		if err != nil {
+			if ctx.Err() != nil {
+				return // parent context cancelled, exit
 			}
+			if dnsErr, ok := err.(*net.DNSError); ok && dnsErr.IsNotFound {
+				log.Debug(dnsErr)
+			} else if !errors.Is(err, context.DeadlineExceeded) {
+				log.Error(err)
+			} else {
+				log.Errorln("DNS lookup timed out:", dnsRecord)
+			}
+		} else {
 			for _, txt := range txtrecords {
 				for _, entry := range strings.Split(txt, ",") {
 					entry := strings.SplitN(entry, "=", 2)
@@ -55,17 +61,13 @@ func RemoteFetcher(dnsRecord string) {
 					}
 				}
 			}
-		}()
-		<-ctx.Done()
-		switch ctxErr := ctx.Err(); ctxErr {
-		case context.Canceled:
-			// Do Nothing
-		case context.DeadlineExceeded:
-			log.Errorln("DNS lookup timed out:", dnsRecord)
-		default:
-			log.Errorln(ctxErr, dnsRecord)
 		}
-		time.Sleep(2 * time.Minute)
+
+		select {
+		case <-time.After(2 * time.Minute):
+		case <-ctx.Done():
+			return
+		}
 	}
 }
 

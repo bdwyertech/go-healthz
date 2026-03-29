@@ -14,6 +14,7 @@ import (
 	"path/filepath"
 	"runtime"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	log "github.com/sirupsen/logrus"
@@ -80,7 +81,9 @@ func Run(cfgPath string) {
 	}
 
 	// Background Remote Disable
-	Remote(cfg.Remotes)
+	remoteCtx, remoteCancel := context.WithCancel(context.Background())
+	defer remoteCancel()
+	Remote(remoteCtx, cfg.Remotes)
 
 	r := mux.NewRouter()
 
@@ -143,8 +146,12 @@ func Run(cfgPath string) {
 		global := GlobalStatus{}
 		global.Healthy = true
 
+		var healthy atomic.Bool
+		healthy.Store(true)
+
 		if _, err := os.Stat(globalSemaphore); err == nil {
 			global.Healthy = false
+			healthy.Store(false)
 			global.Reason = "Global unhealthy semaphore exists: " + globalSemaphore
 			log.Warnln(global.Reason)
 		}
@@ -162,7 +169,7 @@ func Run(cfgPath string) {
 				status, _ := svc.Status()
 				if !status.Healthy {
 					log.Warnln("Service unhealthy:", svc.Name)
-					global.Healthy = false
+					healthy.Store(false)
 				}
 				global.Services[i] = status
 			}(i, svc)
@@ -179,7 +186,7 @@ func Run(cfgPath string) {
 				status, _ := cmd.Status()
 				if !status.Healthy {
 					log.Warnln("Command unhealthy:", cmd.Name)
-					global.Healthy = false
+					healthy.Store(false)
 				}
 				global.Commands[i] = status
 			}(i, cmd)
@@ -196,7 +203,7 @@ func Run(cfgPath string) {
 				status, _ := req.Status()
 				if !status.Healthy {
 					log.Warnln("Request unhealthy:", req.Name)
-					global.Healthy = false
+					healthy.Store(false)
 				}
 				global.Requests[i] = status
 			}(i, req)
@@ -204,6 +211,8 @@ func Run(cfgPath string) {
 
 		// Waiters
 		wg.Wait()
+
+		global.Healthy = healthy.Load()
 
 		if global.Healthy {
 			w.WriteHeader(http.StatusOK)
@@ -255,6 +264,7 @@ func Run(cfgPath string) {
 	// Doesn't block if no connections, but will otherwise wait
 	// until the timeout deadline.
 	log.Info("Go-Healthz shutting down")
+	remoteCancel()
 	srv.Shutdown(ctx)
 	os.Exit(0)
 }
