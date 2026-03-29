@@ -1,6 +1,6 @@
 module github.com/bdwyertech/go-healthz
 
-go 1.24.0
+go 1.25.0
 
 require (
 	github.com/coreos/go-systemd/v22 v22.7.0
@@ -11,7 +11,7 @@ require (
 	github.com/pkg/errors v0.9.1
 	github.com/sirupsen/logrus v1.9.4
 	github.com/stretchr/testify v1.11.1
-	golang.org/x/sys v0.40.0
+	golang.org/x/sys v0.42.0
 	gopkg.in/yaml.v3 v3.0.1
 )
 
