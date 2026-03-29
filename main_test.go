@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"encoding/json"
+	"fmt"
 	"io"
 	"net/http"
 	"net/http/httptest"
@@ -11,6 +12,7 @@ import (
 	"sync"
 	"sync/atomic"
 	"testing"
+	"testing/quick"
 	"time"
 
 	"github.com/gorilla/mux"
@@ -45,9 +47,8 @@ func TestDefault(t *testing.T) {
 	assert.Equal(t, true, status.Healthy, "Global status should be healthy")
 }
 
-// TestRootHandler_ConcurrentUnhealthy verifies that the root handler is
-// race-free when multiple services report unhealthy concurrently. Running
-// with -race should produce no warnings.
+// TestRootHandler_ConcurrentUnhealthy verifies the root handler is race-free
+// when multiple services report unhealthy concurrently.
 func TestRootHandler_ConcurrentUnhealthy(t *testing.T) {
 	r := mux.NewRouter()
 
@@ -64,11 +65,9 @@ func TestRootHandler_ConcurrentUnhealthy(t *testing.T) {
 		var wg sync.WaitGroup
 
 		for i := 0; i < numServices; i++ {
-			wg.Add(1)
-			go func() {
-				defer wg.Done()
+			wg.Go(func() {
 				healthy.Store(false)
-			}()
+			})
 		}
 
 		wg.Wait()
@@ -100,8 +99,8 @@ func TestRootHandler_ConcurrentUnhealthy(t *testing.T) {
 	}
 }
 
-// TestRootHandler_AllHealthy verifies the root handler returns 200 and
-// Healthy=true when no checks report unhealthy.
+// TestRootHandler_AllHealthy verifies the root handler returns 200 when all
+// checks are healthy.
 func TestRootHandler_AllHealthy(t *testing.T) {
 	r := mux.NewRouter()
 
@@ -138,8 +137,8 @@ func TestRootHandler_AllHealthy(t *testing.T) {
 	}
 }
 
-// TestRootHandler_MixedHealth verifies the root handler returns 503 and
-// Healthy=false when at least one service check is unhealthy.
+// TestRootHandler_MixedHealth verifies the root handler returns 503 when at
+// least one service is unhealthy.
 func TestRootHandler_MixedHealth(t *testing.T) {
 	r := mux.NewRouter()
 
@@ -154,13 +153,11 @@ func TestRootHandler_MixedHealth(t *testing.T) {
 
 		healthResults := []bool{true, true, false, true}
 		for _, h := range healthResults {
-			wg.Add(1)
-			go func(isHealthy bool) {
-				defer wg.Done()
-				if !isHealthy {
+			wg.Go(func() {
+				if !h {
 					healthy.Store(false)
 				}
-			}(h)
+			})
 		}
 
 		wg.Wait()
@@ -191,8 +188,8 @@ func TestRootHandler_MixedHealth(t *testing.T) {
 	}
 }
 
-// TestRootHandler_JSONStructure verifies the root handler returns valid JSON
-// with the expected GlobalStatus fields and correct Content-Type header.
+// TestRootHandler_JSONStructure verifies the response is valid JSON with the
+// expected GlobalStatus fields and correct Content-Type header.
 func TestRootHandler_JSONStructure(t *testing.T) {
 	r := mux.NewRouter()
 
@@ -231,8 +228,8 @@ func TestRootHandler_JSONStructure(t *testing.T) {
 	}
 }
 
-// TestRootHandler_HTTPStatusCodes verifies the mapping between health status
-// and HTTP status codes: 200 for healthy, 503 for unhealthy.
+// TestRootHandler_HTTPStatusCodes verifies 200 is returned for healthy and
+// 503 for unhealthy.
 func TestRootHandler_HTTPStatusCodes(t *testing.T) {
 	tests := []struct {
 		name           string
@@ -268,9 +265,8 @@ func TestRootHandler_HTTPStatusCodes(t *testing.T) {
 	}
 }
 
-// TestRootHandler_ContextCancellation verifies that the root handler returns
-// promptly with 503 when the request context is cancelled, even if a health
-// check goroutine is still running.
+// TestRootHandler_ContextCancellation verifies the handler returns 503
+// promptly when the request context is cancelled mid-check.
 func TestRootHandler_ContextCancellation(t *testing.T) {
 	blocker := make(chan struct{})
 	defer close(blocker)
@@ -285,11 +281,9 @@ func TestRootHandler_ContextCancellation(t *testing.T) {
 		healthy.Store(true)
 
 		var wg sync.WaitGroup
-		wg.Add(1)
-		go func() {
-			defer wg.Done()
+		wg.Go(func() {
 			<-blocker
-		}()
+		})
 
 		done := make(chan struct{})
 		go func() {
@@ -341,5 +335,89 @@ func TestRootHandler_ContextCancellation(t *testing.T) {
 	}
 	if status.Reason == "" {
 		t.Error("Expected a timeout reason in the response")
+	}
+}
+
+// TestPropertyIndexedResultPlacement uses property-based testing to verify that
+// each goroutine writes its result to the correct index in the results slice.
+func TestPropertyIndexedResultPlacement(t *testing.T) {
+	cfg := &quick.Config{MaxCount: 100}
+
+	f := func(outcomes []bool) bool {
+		n := len(outcomes)
+		if n == 0 || n > 50 {
+			return true // skip out-of-range inputs
+		}
+
+		// Pre-allocate the results slice.
+		results := make([]SvcStatus, n)
+
+		var wg sync.WaitGroup
+		for i, healthy := range outcomes {
+			wg.Go(func() {
+				results[i] = SvcStatus{
+					Healthy: healthy,
+					Name:    fmt.Sprintf("svc-%d", i),
+				}
+			})
+		}
+		wg.Wait()
+
+		// Verify each slot matches its expected outcome.
+		for i, expected := range outcomes {
+			if results[i].Healthy != expected {
+				return false
+			}
+			if results[i].Name != fmt.Sprintf("svc-%d", i) {
+				return false
+			}
+		}
+		return true
+	}
+
+	if err := quick.Check(f, cfg); err != nil {
+		t.Errorf("Indexed result placement failed: %v", err)
+	}
+}
+
+// TestPropertyHealthyFlagAggregate uses property-based testing to verify that
+// the aggregate healthy flag is true only when every individual check is true.
+func TestPropertyHealthyFlagAggregate(t *testing.T) {
+	cfg := &quick.Config{MaxCount: 100}
+
+	// allTrue returns true only if every element is true.
+	allTrue := func(v []bool) bool {
+		for _, b := range v {
+			if !b {
+				return false
+			}
+		}
+		return true
+	}
+
+	f := func(vector []bool) bool {
+		n := len(vector)
+		if n == 0 || n > 50 {
+			return true // skip out-of-range inputs
+		}
+
+		var healthy atomic.Bool
+		healthy.Store(true)
+
+		var wg sync.WaitGroup
+		for _, val := range vector {
+			wg.Go(func() {
+				if !val {
+					healthy.Store(false)
+				}
+			})
+		}
+		wg.Wait()
+
+		return healthy.Load() == allTrue(vector)
+	}
+
+	if err := quick.Check(f, cfg); err != nil {
+		t.Errorf("Healthy flag aggregate failed: %v", err)
 	}
 }
