@@ -13,7 +13,7 @@ import (
 	"github.com/jellydator/ttlcache/v3"
 )
 
-var remotelyDisabled = ttlcache.New[string, string](
+var remotelyDisabled = ttlcache.New(
 	ttlcache.WithTTL[string, string](5*time.Minute),
 	ttlcache.WithDisableTouchOnHit[string, string](),
 )

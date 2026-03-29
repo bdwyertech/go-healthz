@@ -1,7 +1,6 @@
 package main
 
 import (
-	"context"
 	"encoding/json"
 	"io"
 	"net/http"
@@ -19,8 +18,7 @@ func TestDefault(t *testing.T) {
 	os.Args = []string{"cmd", "-config=" + filepath.Join(cwd, "test", "config.yml")}
 
 	// Hack! :-)
-	ctx, cancel := context.WithCancel(context.Background())
-	defer cancel()
+	ctx := t.Context()
 	go func() {
 		go main()
 		<-ctx.Done()

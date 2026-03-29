@@ -5,6 +5,7 @@ go 1.25.0
 require (
 	github.com/coreos/go-systemd/v22 v22.7.0
 	github.com/gorilla/mux v1.8.1
+	github.com/hashicorp/go-cleanhttp v0.5.2
 	github.com/jellydator/ttlcache/v3 v3.4.0
 	github.com/kardianos/service v1.2.4
 	github.com/kofalt/go-memoize v0.0.0-20240506050413-9e5eb99a0f2a

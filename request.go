@@ -7,13 +7,13 @@ import (
 	"crypto/tls"
 	"encoding/json"
 	"io"
-	"net"
 	"net/http"
 	"strings"
 	"time"
 
 	log "github.com/sirupsen/logrus"
 
+	"github.com/hashicorp/go-cleanhttp"
 	"github.com/kofalt/go-memoize"
 	"github.com/pkg/errors"
 )
@@ -30,6 +30,7 @@ type Request struct {
 	Sensitive bool              `yaml:"sensitive"`
 	Insecure  bool              `yaml:"insecure"`
 	cache     *memoize.Memoizer
+	transport *http.Transport
 }
 
 type RequestStatus struct {
@@ -58,6 +59,18 @@ func (req *Request) Cached() (cache *memoize.Memoizer) {
 	req.cache = memoize.NewMemoizer(duration, 5*time.Minute)
 
 	return req.cache
+}
+
+func (req *Request) getTransport() *http.Transport {
+	if req.transport != nil {
+		return req.transport
+	}
+
+	transport := cleanhttp.DefaultPooledTransport()
+	transport.TLSClientConfig = &tls.Config{InsecureSkipVerify: req.Insecure}
+	req.transport = transport
+
+	return req.transport
 }
 
 func (req *Request) Status() (status RequestStatus, err error) {
@@ -101,23 +114,8 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		r.Header.Set(k, v)
 	}
 
-	// Copy of http.DefaultTransport with Flippable TLS Verification
-	// https://golang.org/pkg/net/http/#Client
 	client := &http.Client{
-		Transport: &http.Transport{
-			TLSClientConfig: &tls.Config{InsecureSkipVerify: req.Insecure},
-			Proxy:           http.ProxyFromEnvironment,
-			DialContext: (&net.Dialer{
-				Timeout:   30 * time.Second,
-				KeepAlive: 30 * time.Second,
-				DualStack: true,
-			}).DialContext,
-			ForceAttemptHTTP2:     true,
-			MaxIdleConns:          100,
-			IdleConnTimeout:       90 * time.Second,
-			TLSHandshakeTimeout:   10 * time.Second,
-			ExpectContinueTimeout: 1 * time.Second,
-		},
+		Transport: req.getTransport(),
 	}
 
 	log.Debugln("Executing Request:", req.Name)
@@ -142,11 +140,17 @@ func (req *Request) Run() (status RequestStatus, err error) {
 		}
 	}
 
-	if req.Sensitive || resp.Body == nil {
-		return
+	if resp.Body != nil {
+		defer resp.Body.Close()
 	}
 
-	defer resp.Body.Close()
+	if req.Sensitive || resp.Body == nil {
+		// Drain the body so the underlying TCP connection can be reused
+		if resp.Body != nil {
+			io.Copy(io.Discard, resp.Body)
+		}
+		return
+	}
 
 	contentType := resp.Header.Get("Content-Type")
 	switch strings.Split(contentType, ";")[0] {
