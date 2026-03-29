@@ -163,16 +163,14 @@ func Run(cfgPath string) {
 		//
 		global.Services = make([]SvcStatus, len(cfg.Services))
 		for i, svc := range cfg.Services {
-			wg.Add(1)
-			go func(i int, svc *Service) {
-				defer wg.Done()
+			wg.Go(func() {
 				status, _ := svc.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Service unhealthy:", svc.Name)
 					healthy.Store(false)
 				}
 				global.Services[i] = status
-			}(i, svc)
+			})
 		}
 
 		//
@@ -180,16 +178,14 @@ func Run(cfgPath string) {
 		//
 		global.Commands = make([]CmdStatus, len(cfg.Commands))
 		for i, cmd := range cfg.Commands {
-			wg.Add(1)
-			go func(i int, cmd *Command) {
-				defer wg.Done()
+			wg.Go(func() {
 				status, _ := cmd.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Command unhealthy:", cmd.Name)
 					healthy.Store(false)
 				}
 				global.Commands[i] = status
-			}(i, cmd)
+			})
 		}
 
 		//
@@ -197,16 +193,14 @@ func Run(cfgPath string) {
 		//
 		global.Requests = make([]RequestStatus, len(cfg.Requests))
 		for i, req := range cfg.Requests {
-			wg.Add(1)
-			go func(i int, req *Request) {
-				defer wg.Done()
+			wg.Go(func() {
 				status, _ := req.Status(r.Context())
 				if !status.Healthy {
 					log.Warnln("Request unhealthy:", req.Name)
 					healthy.Store(false)
 				}
 				global.Requests[i] = status
-			}(i, req)
+			})
 		}
 
 		// Wait for checks or request context cancellation
